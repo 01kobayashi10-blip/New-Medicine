@@ -12,6 +12,7 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import urlparse, urljoin
 
 import feedparser
 
@@ -23,13 +24,28 @@ DEFAULT_RSS = (
     "https://www.mixonline.jp/DesktopModules/MixOnline_Rss/MixOnlinerss.aspx?rssmode=3"
 )
 
+# RSS の link が / で始まる相対URLのとき、file:// で開いた HTML からも辿れるよう絶対化する基準
+LINK_BASE = "https://www.mixonline.jp/"
+
+
+def canonical_item_id(raw: str) -> str:
+    """guid / link を保存・比較用の安定キーに正規化（相対パスはミクス本番オリジンに結合）。"""
+    raw = (raw or "").strip()
+    if not raw:
+        return ""
+    parsed = urlparse(raw)
+    if parsed.scheme in ("http", "https"):
+        return raw
+    # tag:, urn: など http 以外のスキームはそのまま
+    if parsed.scheme:
+        return raw
+    return urljoin(LINK_BASE, raw)
+
 
 def stable_id(entry: feedparser.FeedParserDict) -> str:
     guid = (entry.get("id") or entry.get("guid") or "").strip()
-    if guid:
-        return guid
-    link = (entry.get("link") or "").strip()
-    return link or ""
+    candidate = guid or (entry.get("link") or "").strip()
+    return canonical_item_id(candidate) if candidate else ""
 
 
 def fetch_feed(url: str, timeout: int = 30) -> bytes:
@@ -50,7 +66,7 @@ def load_processed() -> set[str]:
     with open(DATA_PATH, encoding="utf-8") as f:
         data = json.load(f)
     ids = data.get("processed_ids") or []
-    return set(str(x) for x in ids)
+    return {canonical_item_id(str(x)) for x in ids if str(x).strip()}
 
 
 def save_processed(ids: set[str]) -> None:
@@ -64,7 +80,7 @@ def save_processed(ids: set[str]) -> None:
 def build_html(
     items: list[tuple[str, str, str]],
     new_count: int,
-    generated_at: str,
+    meta_line: str,
 ) -> str:
     """items: (title, link, published)"""
     lis = []
@@ -99,7 +115,7 @@ def build_html(
 </head>
 <body>
   <h1>ミクスOnline RSS — タイトルに「発売」を含む記事</h1>
-  <p class="meta">生成: {html.escape(generated_at, quote=True)} / 本バッチの新規件数: {new_count}</p>
+  <p class="meta">{html.escape(meta_line, quote=True)}</p>
   {new_note}
   <ul>
     {body_list}
@@ -150,7 +166,6 @@ def main() -> int:
             if sid:
                 matched.append(entry)
 
-    matched_ids = [stable_id(e) for e in matched]
     processed = load_processed()
     new_entries = [e for e in matched if stable_id(e) not in processed]
 
@@ -164,17 +179,14 @@ def main() -> int:
         needs_commit="true" if new_count else "false",
     )
 
-    if not new_entries:
-        print("No new items; leaving reports and state unchanged.")
+    if not matched:
+        print("No 発売 items in current RSS; leaving reports and state unchanged.")
         return 0
-
-    updated = processed | {stable_id(e) for e in new_entries}
-    save_processed(updated)
 
     rows: list[tuple[str, str, str]] = []
     for e in matched:
         title = e.get("title") or ""
-        link = (e.get("link") or "").strip()
+        link = canonical_item_id((e.get("link") or "").strip())
         published = ""
         if e.get("published"):
             published = e["published"]
@@ -182,12 +194,29 @@ def main() -> int:
             published = e["updated"]
         rows.append((title, link, published))
 
-    generated = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    if new_entries:
+        updated = processed | {stable_id(e) for e in new_entries}
+        save_processed(updated)
+
+    now = datetime.now(timezone.utc)
+    if new_count:
+        meta_line = (
+            f"生成: {now.strftime('%Y-%m-%dT%H:%M:%SZ')} / 本バッチの新規件数: {new_count}"
+        )
+    else:
+        # 日付を入れると毎日ファイルが変わり空コミットが増えるため、新規なし時は固定文
+        meta_line = "RSSスナップショット（新規なし） / 記事リンクは https の絶対URL"
+
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(REPORT_PATH, "w", encoding="utf-8") as f:
-        f.write(build_html(rows, new_count, generated))
+        f.write(build_html(rows, new_count, meta_line))
 
-    print(f"Wrote {REPORT_PATH.relative_to(ROOT)} and updated state ({new_count} new).")
+    if new_count:
+        print(f"Wrote {REPORT_PATH.relative_to(ROOT)} and updated state ({new_count} new).")
+    else:
+        print(
+            f"Wrote {REPORT_PATH.relative_to(ROOT)} (absolute links / snapshot, 0 new)."
+        )
     return 0
 
 
