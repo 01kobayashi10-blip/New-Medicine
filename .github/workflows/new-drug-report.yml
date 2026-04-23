@@ -1,0 +1,72 @@
+name: Mix Online 発売記事レポート
+
+on:
+  schedule:
+    # 毎日 00:15 UTC（日本時間 09:15 前後。DST で変動）
+    - cron: "15 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: new-drug-report
+  cancel-in-progress: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - id: fetch
+        name: Fetch RSS and update report
+        run: python scripts/fetch_and_report.py
+        env:
+          RSS_URL: https://www.mixonline.jp/DesktopModules/MixOnline_Rss/MixOnlinerss.aspx?rssmode=3
+
+      - id: commit
+        name: Commit and push if changed
+        if: success()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/processed_items.json reports/latest.html
+          if git diff --staged --quiet; then
+            echo "committed=false" >> "$GITHUB_OUTPUT"
+            echo "No file changes to commit."
+            exit 0
+          fi
+          MSG="chore: update 発売記事レポート (${NEW_COUNT} 件新規)"
+          git commit -m "$MSG"
+          git push
+          echo "committed=true" >> "$GITHUB_OUTPUT"
+        env:
+          NEW_COUNT: ${{ steps.fetch.outputs.new_count }}
+
+      - name: Notify Slack
+        if: success() && steps.commit.outputs.committed == 'true'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          NEW_COUNT: ${{ steps.fetch.outputs.new_count }}
+          LINK: ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/reports/latest.html
+        run: |
+          if [ -z "${SLACK_WEBHOOK_URL:-}" ]; then
+            echo "SLACK_WEBHOOK_URL is not set; skipping Slack."
+            exit 0
+          fi
+          python -c "import json,os; print(json.dumps({'text': f\"Mix Online 発売記事: {os.environ['NEW_COUNT']} 件の新規を検出しました。\\n{os.environ['LINK']}\"}))" > /tmp/slack.json
+          curl -sS -X POST -H "Content-type: application/json" --data-binary @/tmp/slack.json "$SLACK_WEBHOOK_URL" \
+            || echo "::warning::Slack POST failed (workflow continues)"

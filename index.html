@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>アクイプタ錠 — 図解まとめ</title>
+  <!-- 本番公開時は tailwindcss.com CDN ではなくビルド済み CSS への切替を推奨（可用性・再現性のため） -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { dark: '#0c4a6e', mid: '#0369a1', light: '#e0f2fe' }
+          },
+          fontFamily: {
+            sans: ['"Hiragino Sans"', '"Hiragino Kaku Gothic ProN"', 'Meiryo', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      body { background: #fff !important; }
+      .shadow-lg, .shadow-md, .shadow-sm { box-shadow: none !important; }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800 antialiased">
+  <!-- ヘッダー（PDFボタンはヘッダー右上に配置・スクロールでヘッダーと一体で移動） -->
+  <header class="relative bg-gradient-to-br from-brand-dark via-brand-mid to-sky-600 text-white shadow-lg">
+    <div class="mx-auto max-w-5xl px-4 py-10 pb-10 pt-10 sm:px-6">
+      <div class="no-print absolute right-4 top-4 z-10 sm:right-6 sm:top-6">
+        <button
+          type="button"
+          onclick="window.print()"
+          class="inline-flex items-center gap-1.5 rounded-lg border border-white/40 bg-white/15 px-3 py-2 text-xs font-medium text-white shadow-md backdrop-blur-sm transition-colors hover:border-white/60 hover:bg-white/25"
+          aria-label="PDFとして保存（印刷ダイアログを開く）"
+        >
+          <svg class="h-3.5 w-3.5 shrink-0 text-sky-100" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" x2="12" y1="15" y2="3" />
+          </svg>
+          PDF
+        </button>
+      </div>
+      <div class="max-w-2xl pr-24 sm:pr-28">
+        <p class="text-sm font-medium uppercase tracking-widest text-sky-200/90">経口 CGRP 受容体拮抗薬（ゲパント系）</p>
+        <h1 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">アクイプタ錠</h1>
+        <p class="mt-3 max-w-2xl text-lg text-sky-100">製品概要・作用機序・臨床試験・副作用・既存薬との比較</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+    <p class="mb-8 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+      本ページは公開情報に基づく整理であり、診療・服薬の判断は医師・薬剤師の指示および最新の添付文書に従ってください。
+    </p>
+
+    <!-- 製品名・一般名・効能効果（参照図解の3区分） -->
+    <section class="mb-12">
+      <h2 class="mb-4 flex items-center gap-2 text-xl font-bold text-brand-dark">
+        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-mid text-sm text-white">1</span>
+        製品名・一般名・効能効果
+      </h2>
+      <div class="grid gap-4 lg:grid-cols-3">
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">販売名（製品名）</p>
+          <p class="mt-2 text-2xl font-bold text-brand-dark">アクイプタ錠</p>
+          <p class="mt-2 text-sm text-slate-600">10mg・30mg・60mg</p>
+          <p class="mt-1 text-xs text-slate-500">製造販売：アッヴィ合同会社／欧文商標 AQUIPTA Tablets</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">一般名（有効成分）</p>
+          <p class="mt-2 text-2xl font-bold text-brand-dark">アトゲパント水和物</p>
+          <p class="mt-2 text-sm text-slate-600">欧文一般名：Atogepant Hydrate</p>
+        </div>
+        <div class="rounded-2xl border-2 border-brand-mid bg-gradient-to-br from-sky-50 via-white to-brand-light p-5 shadow-md ring-1 ring-sky-200/80">
+          <div class="space-y-4">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">薬効分類</p>
+              <p class="mt-2 text-2xl font-bold leading-tight text-brand-dark">経口CGRP受容体拮抗薬</p>
+            </div>
+            <div class="border-t border-sky-200/80 pt-4">
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">効能又は効果</p>
+              <p class="mt-2 text-2xl font-bold leading-tight text-brand-dark">片頭痛発作の発症抑制</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 疾患の一言解説 -->
+    <section class="mb-12">
+      <h2 class="mb-4 flex items-center gap-2 text-xl font-bold text-brand-dark">
+        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-mid text-sm text-white">2</span>
+        疾患の一言解説（片頭痛）
+      </h2>
+      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <p class="text-center text-lg font-bold leading-relaxed text-brand-dark sm:text-xl">
+          「脳と三叉神経血管系の過敏さ」が繰り返し起こす、<span class="whitespace-nowrap">搏動性の頭痛発作</span>
+        </p>
+        <p class="mx-auto mt-5 max-w-3xl text-sm leading-relaxed text-slate-700 sm:text-base">
+          片頭痛は、拍動するような頭痛に加え、吐き気・羞明（光がつらい）・音恐怖（音がつらい）などを伴うことがあり、発作が月に何度も出ると生活や仕事に大きく影響します。<strong class="text-brand-dark">カルシトニン遺伝子関連ペプチド（CGRP）</strong>は、その発作の病態に関わる伝令物質のひとつとして知られています。
+        </p>
+      </div>
+    </section>
+
+    <!-- 作用機序（ステップ型・参照図解に準拠） -->
+    <section class="mb-12">
+      <h2 class="mb-4 flex items-center gap-2 text-xl font-bold text-brand-dark">
+        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-mid text-sm text-white">3</span>
+        作用機序
+      </h2>
+      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <p class="mb-8 text-sm leading-relaxed text-slate-700 sm:text-base">
+          アトゲパントは、<strong class="text-brand-dark">CGRP受容体に選択的に結合し、拮抗薬として受容体を介したシグナル伝達を抑えます</strong>。これにより片頭痛発作の発症抑制効果が期待される、というのが薬理の中心です（添付文書「18. 薬効薬理」）。
+        </p>
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4 lg:items-stretch">
+          <div class="flex flex-col rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <span class="text-xs font-bold text-slate-500">ステップ 1</span>
+            <p class="mt-2 font-bold text-brand-dark">CGRPが放出</p>
+            <p class="mt-2 text-sm text-slate-600">神経・血管から放出。血管や痛み伝達に関与する伝令物質（カルシトニン遺伝子関連ペプチド）。</p>
+          </div>
+          <div class="flex flex-col rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <span class="text-xs font-bold text-slate-500">ステップ 2</span>
+            <p class="mt-2 font-bold text-brand-dark">受容体へ結合しようとする</p>
+            <p class="mt-2 text-sm text-slate-600">通常はここで反応が進み、病態に関与します。</p>
+          </div>
+          <div class="flex flex-col rounded-xl border-2 border-brand-mid bg-sky-50 p-4 md:col-span-2 lg:col-span-2">
+            <span class="text-xs font-bold text-brand-mid">アトゲパントのはたらき</span>
+            <p class="mt-2 text-lg font-bold text-brand-dark">受容体をブロック</p>
+            <p class="mt-2 text-sm text-slate-700">CGRP受容体に結合し、シグナルを止める（拮抗）。トリプタン製剤のような脳血管収縮を主とする機序とは異なります。</p>
+          </div>
+        </div>
+        <p class="mt-6 text-center text-sm font-medium text-slate-600">→ 発作頻度の抑制へ（臨床では月間片頭痛日数〈MMD〉の変化などで評価）</p>
+        <p class="mt-4 text-xs text-slate-500">出典：添付文書「18. 薬効薬理」要約／<a class="font-medium text-sky-900 underline decoration-sky-800 underline-offset-2 hover:text-sky-950" href="https://www.kegg.jp/medicus-bin/japic_med?japic_code=00071998" target="_blank" rel="noopener noreferrer">KEGG MEDICUS 医療用医薬品情報（アクイプタ）</a></p>
+      </div>
+    </section>
+
+    <!-- 臨床試験 -->
+    <section class="mb-12">
+      <h2 class="mb-4 flex items-center gap-2 text-xl font-bold text-brand-dark">
+        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-mid text-sm text-white">4</span>
+        主要エビデンス（臨床試験の結果）
+      </h2>
+      <p class="mb-4 text-sm text-slate-600">以下は日本の添付文書「17. 臨床成績」に記載の試験のうち、<strong>国内承認用量（アトゲパントとして60mg・1日1回）</strong>の群の結果に限定して掲載しています。主要評価項目は<strong>投与12週間の平均月間片頭痛日数（MMD）のベースラインからの変化量</strong>です。</p>
+
+      <div class="space-y-6">
+        <!-- RELEASE：参照レイアウト（薄緑ヘッダー・左主要評価・下段に統計結合セル） -->
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div class="bg-slate-800 px-4 py-3 text-white">
+            <p class="font-bold">国内第Ⅱ／Ⅲ相試験 RELEASE（M22-056）</p>
+            <p class="text-sm leading-relaxed text-slate-100">日本人・反復性片頭痛（MMD≥4日、月間頭痛日数&lt;15日）n=523・プラセボ対照二重盲検・12週間</p>
+          </div>
+          <div class="space-y-5 p-4 sm:p-5">
+            <p class="text-xs font-medium text-slate-500">主要評価項目（投与開始12週間・MMDのベースラインからの変化量／最小二乗平均）— 60mg・1日1回群</p>
+
+            <div class="overflow-x-auto">
+              <table class="w-full min-w-[320px] border-collapse border border-slate-200 text-sm text-slate-800">
+                <caption class="sr-only">RELEASE試験：60mg1日1回群とプラセボ群の主要評価（MMD変化量）</caption>
+                <thead>
+                  <tr class="bg-lime-50">
+                    <th class="w-[38%] border border-slate-200 py-2.5 sm:w-[32%]" scope="col"><span class="sr-only">評価項目</span></th>
+                    <th class="border border-slate-200 px-3 py-2.5 text-center text-xs font-bold sm:text-sm" scope="col">アクイプタ群<span class="block font-normal text-slate-600">（60mg・1日1回）</span></th>
+                    <th class="border border-slate-200 px-3 py-2.5 text-center text-xs font-bold sm:text-sm" scope="col">プラセボ群</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th class="border border-slate-200 bg-white p-3 align-middle text-xs font-normal leading-snug sm:text-sm" scope="row" rowspan="2">投与開始から12週間における平均月間片頭痛日数のベースラインからの変化量</th>
+                    <td class="border border-slate-200 bg-white px-3 py-4 text-center text-lg font-bold tabular-nums sm:text-xl">−3.3<span class="text-base font-semibold">日</span></td>
+                    <td class="border border-slate-200 bg-white px-3 py-4 text-center text-lg font-bold tabular-nums text-slate-600 sm:text-xl">−1.2<span class="text-base font-semibold">日</span></td>
+                  </tr>
+                  <tr>
+                    <td class="border border-slate-200 bg-lime-50/40 px-3 py-3 text-center text-xs leading-snug sm:text-sm" colspan="2">プラセボとの差 −2.10（95%CI: −2.78～−1.43）、<span class="font-semibold">p&lt;0.0001</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <p class="text-xs text-slate-500">※ 数値は添付文書の最小二乗平均を、表示上1桁に丸めた場合があります（例：−3.34→−3.3日、−1.24→−1.2日）。解析は添付文書記載の反復測定混合効果モデル等に基づく。p値はHochberg法で多重性を調整。</p>
+          </div>
+        </div>
+
+        <!-- PROGRESS -->
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div class="bg-slate-800 px-4 py-3 text-white">
+            <p class="font-bold">国際共同第Ⅲ相試験 PROGRESS（3101-303-002）</p>
+            <p class="text-sm leading-relaxed text-slate-100">慢性片頭痛（MMD≥8日、月間頭痛日数≥15日）n=773（日本人157例含む）・12週間</p>
+          </div>
+          <div class="space-y-5 p-4 sm:p-5">
+            <p class="text-xs font-medium text-slate-500">主要評価項目（投与開始12週間の平均MMDのベースラインからの変化量／最小二乗平均）— 60mg・1日1回群</p>
+
+            <div class="overflow-x-auto">
+              <table class="w-full min-w-[320px] border-collapse border border-slate-200 text-sm text-slate-800">
+                <caption class="sr-only">PROGRESS試験：60mg1日1回群とプラセボ群の主要評価（MMD変化量）</caption>
+                <thead>
+                  <tr class="bg-lime-50">
+                    <th class="w-[38%] border border-slate-200 py-2.5 sm:w-[32%]" scope="col"><span class="sr-only">評価項目</span></th>
+                    <th class="border border-slate-200 px-3 py-2.5 text-center text-xs font-bold sm:text-sm" scope="col">アクイプタ群<span class="block font-normal text-slate-600">（60mg・1日1回）</span></th>
+                    <th class="border border-slate-200 px-3 py-2.5 text-center text-xs font-bold sm:text-sm" scope="col">プラセボ群</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th class="border border-slate-200 bg-white p-3 align-middle text-xs font-normal leading-snug sm:text-sm" scope="row" rowspan="2">投与開始から12週間における平均月間片頭痛日数のベースラインからの変化量</th>
+                    <td class="border border-slate-200 bg-white px-3 py-4 text-center text-lg font-bold tabular-nums sm:text-xl">−6.9<span class="text-base font-semibold">日</span></td>
+                    <td class="border border-slate-200 bg-white px-3 py-4 text-center text-lg font-bold tabular-nums text-slate-600 sm:text-xl">−5.1<span class="text-base font-semibold">日</span></td>
+                  </tr>
+                  <tr>
+                    <td class="border border-slate-200 bg-lime-50/40 px-3 py-3 text-center text-xs leading-snug sm:text-sm" colspan="2">プラセボとの差 −1.82（95%CI: −2.89～−0.75）、<span class="font-semibold">p=0.0009</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="text-xs text-slate-500">※ −6.88日・−5.05日を表示上1桁に丸めた場合の例（−6.9日・−5.1日）。解析は添付文書記載のモデルに基づく。</p>
+          </div>
+        </div>
+
+        <!-- 長期 -->
+        <div class="rounded-2xl border border-emerald-200 bg-emerald-50/80 p-5 shadow-sm">
+          <p class="font-bold text-emerald-900">国内第Ⅲ相長期投与試験（3101-306-002）</p>
+          <p class="mt-2 text-sm text-emerald-900/90">慢性片頭痛・反復性片頭痛の日本人計186例で 60mg1日1回を最長52週投与。MMDの経時的推移が評価され、一定の継続使用における情報が得られています（詳細は添付文書の図表参照）。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 主な副作用（添付文書の区分・参照図解に準拠） -->
+    <section class="mb-12">
+      <h2 class="mb-4 flex items-center gap-2 text-xl font-bold text-brand-dark">
+        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-mid text-sm text-white">5</span>
+        主な副作用（添付文書の区分）
+      </h2>
+      <p class="mb-4 text-sm text-slate-600">以下は頻度区分の例です。実際の症状・対処は必ず医療機関の指示に従ってください。</p>
+      <div class="grid gap-4 lg:grid-cols-2 lg:items-stretch">
+        <div class="order-1 flex h-full flex-col rounded-2xl border border-red-200 bg-red-50/60 p-5 sm:p-6">
+          <p class="font-bold text-red-900">重大な副作用（例）</p>
+          <p class="mt-3 flex-1 text-sm leading-relaxed text-red-950/95">
+            <span class="font-semibold">過敏症反応（頻度不明）</span> — アナフィラキシー、呼吸困難、発疹、そう痒症、蕁麻疹、顔面浮腫など。投与から数日後にあらわれることもある、と添付文書に記載があります。
+          </p>
+        </div>
+        <div class="order-2 flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <p class="font-bold text-brand-dark">その他の副作用（1％以上など）</p>
+          <ul class="mt-4 flex-1 space-y-2.5 text-sm text-slate-700">
+            <li class="flex gap-2"><span class="shrink-0 text-slate-400">•</span><span><strong class="text-slate-800">悪心、便秘</strong>（消化器）</span></li>
+            <li class="flex gap-2"><span class="shrink-0 text-slate-400">•</span><span><strong class="text-slate-800">食欲減退</strong>（代謝及び栄養障害）</span></li>
+            <li class="flex gap-2"><span class="shrink-0 text-slate-400">•</span><span><strong class="text-slate-800">傾眠</strong>（神経系障害）</span></li>
+            <li class="flex gap-2"><span class="shrink-0 text-slate-400">•</span><span><strong class="text-slate-800">体重減少、ALT/AST増加</strong>（臨床検査値）</span></li>
+            <li class="flex gap-2"><span class="shrink-0 text-slate-400">•</span><span><strong class="text-slate-800">疲労</strong>（0.1〜1％未満・全身症状）、<strong class="text-slate-800">そう痒症</strong>（0.1〜1％未満・皮膚及び皮下組織障害）</span></li>
+          </ul>
+        </div>
+      </div>
+      <p class="mt-4 text-xs text-slate-500">出典：添付文書「11. 副作用」／<a class="font-medium text-sky-900 underline decoration-sky-800 underline-offset-2 hover:text-sky-950" href="https://www.kegg.jp/medicus-bin/japic_med?japic_code=00071998" target="_blank" rel="noopener noreferrer">KEGG MEDICUS（アクイプタ）</a></p>
+    </section>
+
+    <!-- 既存薬との比較（CGRP関連製剤・表形式） -->
+    <section class="mb-8">
+      <h2 class="mb-4 flex items-center gap-2 text-xl font-bold text-brand-dark">
+        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-mid text-sm text-white">6</span>
+        既存薬との比較
+      </h2>
+      <p class="mb-4 text-sm text-slate-600">片頭痛治療に用いられるCGRP関連薬の一例を、製品ごとの特徴が比較できるよう表にしました。<strong>承認内容は改訂の可能性があるため</strong>、必ず<strong>各製品の最新の添付文書</strong>で確認してください。</p>
+      <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <p class="no-print mb-1 px-3 pt-3 text-xs text-slate-500 md:hidden" role="note">表は横にスクロールできます</p>
+        <div class="overflow-x-auto px-3 pb-3 md:px-0 md:pb-0" role="region" aria-label="CGRP関連薬の比較表。狭い画面では横スクロールできます。">
+          <table class="w-full min-w-[720px] border-collapse text-left text-xs text-slate-800 sm:text-sm">
+            <caption class="sr-only">CGRP関連製剤（エムガルティ・アジョビ・アイモビーグ・ナルティーク・アクイプタ）の比較</caption>
+            <thead>
+              <tr class="text-slate-900">
+                <th class="min-w-[7rem] border border-slate-300 bg-sky-100 px-2 py-2.5 text-xs font-semibold text-slate-600 sm:min-w-[8.5rem] sm:px-3 sm:text-sm" scope="col">製品名</th>
+                <th class="border border-slate-300 bg-sky-100 px-2 py-2.5 text-center text-xs font-bold sm:px-3 sm:text-sm" scope="col">エムガルティ</th>
+                <th class="border border-slate-300 bg-sky-100 px-2 py-2.5 text-center text-xs font-bold sm:px-3 sm:text-sm" scope="col">アジョビ</th>
+                <th class="border border-slate-300 bg-sky-100 px-2 py-2.5 text-center text-xs font-bold sm:px-3 sm:text-sm" scope="col">アイモビーグ</th>
+                <th class="border border-slate-300 bg-sky-100 px-2 py-2.5 text-center text-xs font-bold sm:px-3 sm:text-sm" scope="col">ナルティーク</th>
+                <th class="border border-red-200 bg-red-50 px-2 py-2.5 text-center text-xs font-bold text-red-900 sm:px-3 sm:text-sm" scope="col">アクイプタ</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="bg-white">
+                <th class="border border-slate-300 bg-sky-50 px-2 py-2.5 text-xs font-semibold sm:px-3 sm:text-sm" scope="row">一般名</th>
+                <td class="border border-slate-300 px-2 py-2.5 text-center sm:px-3">ガルカネズマブ</td>
+                <td class="border border-slate-300 px-2 py-2.5 text-center sm:px-3">フレマネズマブ</td>
+                <td class="border border-slate-300 px-2 py-2.5 text-center sm:px-3">エレヌマブ</td>
+                <td class="border border-slate-300 px-2 py-2.5 text-center sm:px-3">リメジェパント</td>
+                <td class="border border-red-200 bg-red-50 px-2 py-2.5 text-center font-medium text-red-950 sm:px-3">アトゲパント</td>
+              </tr>
+              <tr>
+                <th class="border border-slate-300 bg-sky-50 px-2 py-2.5 text-xs font-semibold sm:px-3 sm:text-sm" scope="row">剤形</th>
+                <td class="border border-slate-300 px-2 py-2.5 sm:px-3">オートインジェクター、シリンジ</td>
+                <td class="border border-slate-300 px-2 py-2.5 sm:px-3">オートインジェクター、シリンジ</td>
+                <td class="border border-slate-300 px-2 py-2.5 sm:px-3">ペン</td>
+                <td class="border border-slate-300 px-2 py-2.5 sm:px-3">OD錠</td>
+                <td class="border border-red-200 bg-red-50 px-2 py-2.5 text-red-950 sm:px-3">錠</td>
+              </tr>
+              <tr class="bg-white">
+                <th class="border border-slate-300 bg-sky-50 px-2 py-2.5 text-xs font-semibold sm:px-3 sm:text-sm" scope="row">作用機序</th>
+                <td class="border border-slate-300 px-2 py-2.5 sm:px-3">抗CGRP抗体</td>
+                <td class="border border-slate-300 px-2 py-2.5 sm:px-3">抗CGRP抗体</td>
+                <td class="border border-slate-300 px-2 py-2.5 sm:px-3">抗CGRP受容体抗体</td>
+                <td class="border border-slate-300 px-2 py-2.5 sm:px-3">CGRP受容体拮抗</td>
+                <td class="border border-red-200 bg-red-50 px-2 py-2.5 text-red-950 sm:px-3">CGRP受容体拮抗</td>
+              </tr>
+              <tr>
+                <th class="border border-slate-300 bg-sky-50 px-2 py-2.5 text-xs font-semibold sm:px-3 sm:text-sm" scope="row">適応症（予防）</th>
+                <td class="border border-slate-300 px-2 py-2.5 text-center text-xs sm:px-3 sm:text-sm">〇</td>
+                <td class="border border-slate-300 px-2 py-2.5 text-center text-xs sm:px-3 sm:text-sm">〇</td>
+                <td class="border border-slate-300 px-2 py-2.5 text-center text-xs sm:px-3 sm:text-sm">〇</td>
+                <td class="border border-slate-300 px-2 py-2.5 text-center text-xs sm:px-3 sm:text-sm">〇</td>
+                <td class="border border-red-200 bg-red-50 px-2 py-2.5 text-center text-xs text-red-950 sm:px-3 sm:text-sm">〇</td>
+              </tr>
+              <tr class="bg-white">
+                <th class="border border-slate-300 bg-sky-50 px-2 py-2.5 text-xs font-semibold sm:px-3 sm:text-sm" scope="row">適応症（急性期）</th>
+                <td class="border border-slate-300 px-2 py-2.5 text-center sm:px-3">×</td>
+                <td class="border border-slate-300 px-2 py-2.5 text-center sm:px-3">×</td>
+                <td class="border border-slate-300 px-2 py-2.5 text-center sm:px-3">×</td>
+                <td class="border border-slate-300 px-2 py-2.5 text-center sm:px-3">〇</td>
+                <td class="border border-red-200 bg-red-50 px-2 py-2.5 text-center text-red-950 sm:px-3">×</td>
+              </tr>
+              <tr>
+                <th class="border border-slate-300 bg-sky-50 px-2 py-2.5 align-top text-xs font-semibold sm:px-3 sm:text-sm" scope="row">用法用量<br /><span class="font-normal text-[10px] text-slate-600">（例・予防時中心）</span></th>
+                <td class="border border-slate-300 px-2 py-2.5 align-top leading-snug sm:px-3">1か月間隔で皮下注投与</td>
+                <td class="border border-slate-300 px-2 py-2.5 align-top leading-snug sm:px-3">4週間間隔または12週間間隔で皮下注投与</td>
+                <td class="border border-slate-300 px-2 py-2.5 align-top leading-snug sm:px-3">4週間間隔で皮下注投与</td>
+                <td class="border border-slate-300 px-2 py-2.5 align-top leading-snug sm:px-3">75mg（1錠）を隔日で経口投与</td>
+                <td class="border border-red-200 bg-red-50 px-2 py-2.5 align-top font-medium leading-snug text-red-950 sm:px-3">アトゲパントとして60mgを1日1回経口投与</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="border-t border-slate-200 bg-slate-50 px-3 py-3 text-[11px] text-slate-600 sm:px-4 sm:text-xs">詳細は添付文書参照</p>
+      </div>
+    </section>
+
+    <!-- 用法の注記 -->
+    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h3 class="font-bold text-brand-dark">用法・用量のメモ（概要）</h3>
+      <ul class="mt-3 list-inside list-disc space-y-1 text-sm text-slate-700">
+        <li>通常、成人には<strong>アトゲパントとして 60mg を1日1回経口</strong>（添付文書）。</li>
+        <li>重度腎障害・末期腎不全、強いCYP3A阻害剤併用、OATP阻害剤併用では<strong>減量や併用注意</strong>あり（添付文書「6」「7」「10」）。</li>
+        <li>投与開始後3か月を目安に効果を評価し、改善が乏しい場合は中止を検討、など継続の考え方が記載されています。</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="border-t border-slate-200 bg-white py-8 text-center text-xs text-slate-500">
+    <p>出典：医薬品インタビューフォーム（添付文書）／<a class="font-medium text-sky-900 underline decoration-sky-800 underline-offset-2 hover:text-sky-950" href="https://www.kegg.jp/medicus-bin/japic_med?japic_code=00071998" target="_blank" rel="noopener noreferrer">KEGG MEDICUS</a> 等の公開情報（2026年時点の整理）</p>
+    <p class="mt-1">アッヴィ合同会社 製造販売 — 問い合わせは添付文書の文献請求先を参照</p>
+  </footer>
+</body>
+</html>
