@@ -1,3 +1,9 @@
+# メール通知を使う場合の Repository secrets（未設定ならメールステップはスキップ）:
+#   SMTP_HOST     例: smtp.gmail.com
+#   SMTP_USER     送信に使うメールアドレス
+#   SMTP_PASSWORD Gmail ならアプリパスワード（2 段階認証後に発行）
+#   MAIL_TO       通知の受信先
+# 任意: SMTP_PORT（未設定時はスクリプト側で 587）、MAIL_FROM（未設定時は SMTP_USER と同じ）、MAIL_SUBJECT
 name: Mix Online 発売記事レポート
 
 on:
@@ -70,3 +76,17 @@ jobs:
           python -c "import json,os; print(json.dumps({'text': f\"Mix Online 発売記事: {os.environ['NEW_COUNT']} 件の新規を検出しました。\\n{os.environ['LINK']}\"}))" > /tmp/slack.json
           curl -sS -X POST -H "Content-type: application/json" --data-binary @/tmp/slack.json "$SLACK_WEBHOOK_URL" \
             || echo "::warning::Slack POST failed (workflow continues)"
+
+      - name: Notify Email
+        if: success() && steps.commit.outputs.committed == 'true'
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}
+          MAIL_FROM: ${{ secrets.MAIL_FROM }}
+          MAIL_SUBJECT: "Mix Online 発売記事: 新規検出"
+          NEW_COUNT: ${{ steps.fetch.outputs.new_count }}
+          LINK: ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/reports/latest.html
+        run: python scripts/send_report_email.py
