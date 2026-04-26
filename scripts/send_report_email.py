@@ -31,13 +31,27 @@ def main() -> int:
     mail_from = os.environ.get("MAIL_FROM", "").strip() or user
     new_count = os.environ.get("NEW_COUNT", "?")
     link = os.environ.get("LINK", "").strip()
-    subject = os.environ.get("MAIL_SUBJECT", "Mix Online 発売記事: 新規検出").strip()
+    default_subject = "Mix Online 発売記事: 新規検出"
+    subject = os.environ.get("MAIL_SUBJECT", default_subject).strip()
+    ev = os.environ.get("GITHUB_EVENT_NAME", "")
 
-    lines = [
-        f"Mix Online 発売記事: {new_count} 件の新規を検出しました。",
-        "",
-        link if link else "（リンクなし）",
-    ]
+    if ev == "workflow_dispatch":
+        if subject == default_subject:
+            subject = "【手動実行】Mix Online 発売記事レポート"
+        lines = [
+            "【手動実行】このメールは GitHub Actions の手動実行に基づき送付しています。",
+            "",
+            f"本RSS取得時点の新規件数: {new_count} 件",
+            "",
+            "レポート（リポジトリ上の最新コミット）:",
+            link if link else "（リンクなし）",
+        ]
+    else:
+        lines = [
+            f"Mix Online 発売記事: {new_count} 件の新規を検出しました。",
+            "",
+            link if link else "（リンクなし）",
+        ]
     body = "\n".join(lines)
 
     msg = EmailMessage()
