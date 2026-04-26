@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ツカイザ錠 — 図解まとめ</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { dark: '#4c1d95', mid: '#7c3aed', light: '#ede9fe' }
+          },
+          fontFamily: {
+            sans: ['"Hiragino Sans"', '"Hiragino Kaku Gothic ProN"', 'Meiryo', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      body { background: #fff !important; }
+      .shadow-lg, .shadow-md, .shadow-sm { box-shadow: none !important; }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-50 text-slate-800 antialiased">
+  <header class="relative bg-gradient-to-br from-brand-dark via-brand-mid to-violet-600 text-white shadow-lg">
+    <div class="mx-auto max-w-5xl px-4 py-10 pb-10 pt-10 sm:px-6">
+      <div class="no-print absolute right-4 top-4 z-10 sm:right-6 sm:top-6">
+        <button
+          type="button"
+          onclick="window.print()"
+          class="inline-flex items-center gap-1.5 rounded-lg border border-white/40 bg-white/15 px-3 py-2 text-xs font-medium text-white shadow-md backdrop-blur-sm transition-colors hover:border-white/60 hover:bg-white/25"
+          aria-label="PDFとして保存（印刷ダイアログを開く）"
+        >
+          <svg class="h-3.5 w-3.5 shrink-0 text-violet-100" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" x2="12" y1="15" y2="3" />
+          </svg>
+          PDF
+        </button>
+      </div>
+      <div class="max-w-2xl pr-24 sm:pr-28">
+        <p class="text-sm font-medium uppercase tracking-widest text-violet-200/90">経口 HER2 選択性チロシンキナーゼ阻害薬</p>
+        <h1 class="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">ツカイザ錠</h1>
+        <p class="mt-3 max-w-2xl text-lg text-violet-100">製品概要・作用機序・臨床試験・副作用・用法のメモ</p>
+      </div>
+    </div>
+  </header>
+
+  <main class="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+    <p class="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+      本ページは公開情報に基づく整理であり、診療・服薬の判断は医師・薬剤師の指示および<strong>最新の添付文書</strong>に従ってください。
+    </p>
+    <p class="mb-8 text-sm text-slate-600">
+      発売ニュース（参考）:
+      <a class="font-medium text-violet-800 underline decoration-violet-600 underline-offset-2 hover:text-violet-950" href="https://www.mixonline.jp/tabid55.html?artid=80111" target="_blank" rel="noopener noreferrer">ミクスOnline — ファイザー HER2陽性乳がん治療薬・ツカイザ錠を発売</a>
+    </p>
+
+    <section class="mb-12">
+      <h2 class="mb-4 flex items-center gap-2 text-xl font-bold text-brand-dark">
+        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-mid text-sm text-white">1</span>
+        製品名・一般名・効能効果
+      </h2>
+      <div class="grid gap-4 lg:grid-cols-3">
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">販売名（製品名）</p>
+          <p class="mt-2 text-2xl font-bold text-brand-dark">ツカイザ錠</p>
+          <p class="mt-2 text-sm text-slate-600">50mg・150mg</p>
+          <p class="mt-1 text-xs text-slate-500">製造販売：ファイザー株式会社／欧文 TUKYSA Tablets</p>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">一般名（有効成分）</p>
+          <p class="mt-2 text-2xl font-bold text-brand-dark">ツカチニブ エタノール付加物</p>
+          <p class="mt-2 text-sm text-slate-600">欧文一般名：Tucatinib Ethanolate</p>
+        </div>
+        <div class="rounded-2xl border-2 border-brand-mid bg-gradient-to-br from-violet-50 via-white to-brand-light p-5 shadow-md ring-1 ring-violet-200/80">
+          <div class="space-y-4">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">薬効分類</p>
+              <p class="mt-2 text-xl font-bold leading-tight text-brand-dark">抗悪性腫瘍剤／HER2 チロシンキナーゼ阻害剤</p>
+            </div>
+            <div class="border-t border-violet-200/80 pt-4">
+              <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">効能又は効果</p>
+              <p class="mt-2 text-lg font-bold leading-snug text-brand-dark">化学療法歴のある HER2 陽性の手術不能又は再発乳癌</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="mb-4 flex items-center gap-2 text-xl font-bold text-brand-dark">
+        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-mid text-sm text-white">2</span>
+        疾患の一言解説（HER2陽性乳がん）
+      </h2>
+      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <p class="text-center text-lg font-bold leading-relaxed text-brand-dark sm:text-xl">
+          <span class="whitespace-nowrap">HER2</span> が過剰に発現した乳がんに対し、<span class="whitespace-nowrap">トラスツズマブ・カペシタビン</span>と併用して経口で攻撃の幅を広げる薬
+        </p>
+        <p class="mx-auto mt-5 max-w-3xl text-sm leading-relaxed text-slate-700 sm:text-base">
+          HER2（ヒト上皮増殖因子受容体2型）は細胞の増殖シグナルに関わるたんぱく質です。HER2 を標的とした治療を受けてきた患者さんのなかで、再び進行がみられる局面などで、<strong class="text-brand-dark">経口の HER2 選択性チロシンキナーゼ阻害薬</strong>として位置づけられます（効能・併用は添付文書のとおり）。
+        </p>
+      </div>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="mb-4 flex items-center gap-2 text-xl font-bold text-brand-dark">
+        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-mid text-sm text-white">3</span>
+        作用機序
+      </h2>
+      <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+        <p class="mb-8 text-sm leading-relaxed text-slate-700 sm:text-base">
+          ツカチニブは、<strong class="text-brand-dark">HER2 のキナーゼ活性を阻害することにより、腫瘍の増殖を抑制する</strong>と考えられています（添付文書「18.1 作用機序」）。<strong class="text-brand-dark">トラスツズマブ</strong>との併用では、<em>in vivo</em> で腫瘍増殖抑制作用の増強が認められたという報告も添付文書に記載されています（「18.2.2」）。
+        </p>
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-4 lg:items-stretch">
+          <div class="flex flex-col rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <span class="text-xs font-bold text-slate-500">ステップ 1</span>
+            <p class="mt-2 font-bold text-brand-dark">HER2 シグナル</p>
+            <p class="mt-2 text-sm text-slate-600">がん細胞で HER2 が過剰発現し、チロシンキナーゼとして下流へシグナルを伝えます。</p>
+          </div>
+          <div class="flex flex-col rounded-xl border border-slate-200 bg-slate-50 p-4">
+            <span class="text-xs font-bold text-slate-500">ステップ 2</span>
+            <p class="mt-2 font-bold text-brand-dark">増殖・生存の促進</p>
+            <p class="mt-2 text-sm text-slate-600">当該シグナルは細胞増殖などに関与します。</p>
+          </div>
+          <div class="flex flex-col rounded-xl border-2 border-brand-mid bg-violet-50 p-4 md:col-span-2 lg:col-span-2">
+            <span class="text-xs font-bold text-brand-mid">ツカチニブのはたらき</span>
+            <p class="mt-2 text-lg font-bold text-brand-dark">HER2 キナーゼを阻害</p>
+            <p class="mt-2 text-sm text-slate-700">HER2 のキナーゼ活性を阻害し、腫瘍の増殖抑制につながると考えられます。併用療法の詳細は添付文書「6. 用法及び用量」を参照してください。</p>
+          </div>
+        </div>
+        <p class="mt-4 text-xs text-slate-500">出典：添付文書「18. 薬効薬理」</p>
+      </div>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="mb-4 flex items-center gap-2 text-xl font-bold text-brand-dark">
+        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-mid text-sm text-white">4</span>
+        主要エビデンス（臨床試験の概要）
+      </h2>
+      <p class="mb-4 text-sm text-slate-600">以下は添付文書「17. 臨床成績」に基づく<strong>要約</strong>です。解析条件・サブグループは原文を参照してください。</p>
+
+      <div class="space-y-6">
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div class="bg-slate-800 px-4 py-3 text-white">
+            <p class="font-bold">海外第Ⅱ相試験 HER2CLIMB（ONT-380-206）</p>
+            <p class="text-sm leading-relaxed text-slate-100">化学療法歴のある HER2 陽性の手術不能又は再発乳癌 612 例。本剤＋トラスツズマブ＋カペシタビン vs プラセボ＋トラスツズマブ＋カペシタビンの二重盲検。</p>
+          </div>
+          <div class="space-y-4 p-4 sm:p-5">
+            <p class="text-sm text-slate-700">
+              主要評価項目（無作為化最初の480例、盲検下独立中央判定）の<strong>無増悪生存期間の中央値</strong>は、<strong class="text-brand-dark">本剤群 7.8 か月</strong>、対照群 5.6 か月。ハザード比 <strong>0.54</strong>（95%信頼区間 0.42〜0.71、層別ログランク検定 <em>p</em> &lt; 0.00001）。
+            </p>
+            <p class="text-xs text-slate-500">副作用の例：本剤群404例中393例（97.3%）に副作用。下痢 74.5%、手足症候群 65.3%、悪心 53.2% 等（データカットオフは添付文書参照）。</p>
+          </div>
+        </div>
+
+        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div class="bg-slate-800 px-4 py-3 text-white">
+            <p class="font-bold">国際共同第Ⅱ相試験 HER2CLIMB-03（MK-7119-001）</p>
+            <p class="text-sm leading-relaxed text-slate-100">日本人 53 例を含む 66 例。本剤＋トラスツズマブ＋カペシタビンの非盲検試験。</p>
+          </div>
+          <div class="space-y-4 p-4 sm:p-5">
+            <p class="text-sm text-slate-700">
+              主要評価項目である<strong>日本人集団（48例）の独立中央判定に基づく奏効率</strong>は <strong class="text-brand-dark">35.4%</strong>（90%信頼区間 24.0〜48.3）。90%信頼区間下限は事前規定閾値 20% を上回った、と記載があります。
+            </p>
+            <p class="text-xs text-slate-500">日本人53例すべてに副作用。手足症候群 66.0%、下痢 58.5%、悪心 43.4% 等（2023年7月17日カットオフ）。</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="mb-4 flex items-center gap-2 text-xl font-bold text-brand-dark">
+        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-mid text-sm text-white">5</span>
+        主な副作用（添付文書の区分）
+      </h2>
+      <p class="mb-4 text-sm text-slate-600">頻度は添付文書の表記に基づきます。実際の対処は必ず医療機関の指示に従ってください。</p>
+      <div class="grid gap-4 lg:grid-cols-2 lg:items-stretch">
+        <div class="order-1 flex h-full flex-col rounded-2xl border border-red-200 bg-red-50/60 p-5 sm:p-6">
+          <p class="font-bold text-red-900">重大な副作用（例）</p>
+          <ul class="mt-3 flex-1 list-inside list-disc space-y-2 text-sm leading-relaxed text-red-950/95">
+            <li><span class="font-semibold">重度の下痢（10.6%）</span> — 休薬・減量等の基準あり（「7.3」）。</li>
+            <li><span class="font-semibold">肝機能障害</span> — 高ビリルビン血症 21.9%、AST/ALT 増加 各 20.0% 等の記載（「11.1.2」）。</li>
+            <li><span class="font-semibold">間質性肺疾患（頻度不明）</span>（「11.1.3」「8.2」）。</li>
+          </ul>
+        </div>
+        <div class="order-2 flex h-full flex-col rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+          <p class="font-bold text-brand-dark">その他の副作用（5%以上の例）</p>
+          <p class="mt-2 text-xs text-slate-500">「11.2」より抜粋</p>
+          <ul class="mt-4 flex-1 space-y-2 text-sm text-slate-700">
+            <li class="flex gap-2"><span class="shrink-0 text-slate-400">•</span><span><strong class="text-slate-800">下痢（72.6%）</strong>、<strong>悪心（52.1%）</strong>、<strong>口内炎（26.8%）</strong>、<strong>嘔吐（25.3%）</strong>（胃腸障害）</span></li>
+            <li class="flex gap-2"><span class="shrink-0 text-slate-400">•</span><span><strong class="text-slate-800">手足症候群（64.9%）</strong>、皮膚乾燥、そう痒症 等（皮膚）</span></li>
+            <li class="flex gap-2"><span class="shrink-0 text-slate-400">•</span><span><strong class="text-slate-800">食欲減退（20.9%）</strong>（代謝及び栄養）</span></li>
+            <li class="flex gap-2"><span class="shrink-0 text-slate-400">•</span><span><strong class="text-slate-800">疲労（36.0%）</strong>（一般・全身）</span></li>
+          </ul>
+        </div>
+      </div>
+      <p class="mt-4 text-xs text-slate-500">出典：添付文書「11. 副作用」</p>
+    </section>
+
+    <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h3 class="font-bold text-brand-dark">用法・用量のメモ（概要）</h3>
+      <ul class="mt-3 list-inside list-disc space-y-2 text-sm text-slate-700">
+        <li>トラスツズマブ（遺伝子組換え）及び<strong>カペシタビンとの併用</strong>において、通常成人には<strong>ツカチニブとして 1 回 300mg を 1 日 2 回経口</strong>。患者の状態により適宜減量（添付文書「6」「7.3」）。</li>
+        <li><strong>重度の肝機能障害（Child-Pugh 分類 C）</strong>では開始用量 <strong>1 回 200mg を 1 日 2 回</strong>（「7.2」）。</li>
+        <li><strong>強い CYP2C8 阻害剤併用</strong>時は開始用量 <strong>1 回 100mg を 1 日 2 回</strong>（「7.4」）。</li>
+        <li>本剤<strong>単独</strong>の有効性・安全性は確立していない（「7.1」）。カペシタビン用量は添付文書「7.5」に表あり。</li>
+        <li>投与中は<strong>肝機能・間質性肺疾患所候・LVEF</strong> 等の観察が重要（「8」）。</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="border-t border-slate-200 bg-white py-8 text-center text-xs text-slate-500">
+    <p>出典：ツカイザ錠 50mg 医薬品インタビューフォーム（添付文書・2026年2月作成第1版に基づく整理）／<a class="font-medium text-violet-900 underline decoration-violet-700 underline-offset-2 hover:text-violet-950" href="https://www.mixonline.jp/tabid55.html?artid=80111" target="_blank" rel="noopener noreferrer">ミクスOnline 発売記事</a></p>
+    <p class="mt-1">製造販売元：ファイザー株式会社 — 問い合わせは添付文書「24. 文献請求先及び問い合わせ先」を参照</p>
+    <p class="mt-1 text-slate-400">新医薬品のため保険給付上、2027年4月末日までは投薬 1 回 14 日分を限度とされる旨が添付文書「25」にあります。</p>
+  </footer>
+</body>
+</html>
