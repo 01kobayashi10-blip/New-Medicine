@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
-"""Mix Online 発売記事レポートのメール通知。GitHub Actions から SMTP で送信する想定。"""
+"""Mix Online 発売記事レポートのメール通知。GitHub Actions から SMTP で送信する想定。
+
+任意の環境変数 INFOGRAPHIC_HTML_PATH:
+  図解などの .html ファイルへのパス（相対はカレントディレクトリ、なければリポジトリルートから解決）。
+  ファイルが存在し、かつ INFOGRAPHIC_ATTACH が無効でないとき multipart/mixed で添付。
+任意: INFOGRAPHIC_ATTACHMENT_NAME — 添付ファイル名（未設定時は実ファイルの basename）
+任意: INFOGRAPHIC_URL — 図解 HTML をブラウザで開く URL。設定時は平文本文の末尾に「ミクス記事の URL と同様」2行で追記する。
+任意: INFOGRAPHIC_ATTACH — "0" / "false" / "no" / "off" のいずれかならファイル添付しない（URL のみにしたいとき）。未設定時はパスが有効なら添付する。
+"""
 
 from __future__ import annotations
 
@@ -41,6 +49,24 @@ def load_latest_items() -> list[dict[str, str]]:
             }
         )
     return out
+
+
+def resolve_infographic_path(raw: str) -> Path | None:
+    """INFOGRAPHIC_HTML_PATH を解決。見つからなければ None（警告のみ）。"""
+    raw = raw.strip()
+    if not raw:
+        return None
+    first = Path(raw).expanduser()
+    candidates = [first]
+    if not first.is_absolute():
+        candidates.append(ROOT / raw)
+    for p in candidates:
+        if p.is_file():
+            return p
+    print(
+        f"::warning::INFOGRAPHIC_HTML_PATH が見つかりません: {raw!r}。添付なしで送信します。"
+    )
+    return None
 
 
 def format_latest_hatsubai_block(items: list[dict[str, str]]) -> str:
@@ -102,6 +128,11 @@ def main() -> int:
             "",
             link if link else "（リンクなし）",
         ]
+
+    infographic_url = os.environ.get("INFOGRAPHIC_URL", "").strip()
+    if infographic_url:
+        lines.extend(["", "図解まとめ（HTML・ブラウザで開く）:", infographic_url])
+
     body = "\n".join(lines)
 
     msg = EmailMessage()
@@ -109,6 +140,28 @@ def main() -> int:
     msg["From"] = mail_from
     msg["To"] = mail_to
     msg.set_content(body, charset="utf-8")
+
+    attach_raw = os.environ.get("INFOGRAPHIC_HTML_PATH", "").strip()
+    attach_opt = os.environ.get("INFOGRAPHIC_ATTACH", "1").strip().lower()
+    skip_attach = attach_opt in ("0", "false", "no", "off")
+    infographic_path = (
+        None
+        if skip_attach
+        else (resolve_infographic_path(attach_raw) if attach_raw else None)
+    )
+    if skip_attach and attach_raw:
+        print("INFOGRAPHIC_ATTACH が無効のため HTML ファイル添付はスキップします。")
+    if infographic_path is not None:
+        display_name = os.environ.get("INFOGRAPHIC_ATTACHMENT_NAME", "").strip()
+        filename = display_name or infographic_path.name or "infographic.html"
+        data = infographic_path.read_bytes()
+        msg.add_attachment(
+            data,
+            maintype="text",
+            subtype="html",
+            filename=filename,
+        )
+        print(f"HTML 添付: {infographic_path} → {filename}")
 
     try:
         with smtplib.SMTP(host, port, timeout=30) as smtp:

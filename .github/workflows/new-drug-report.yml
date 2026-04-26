@@ -4,6 +4,8 @@
 #   SMTP_PASSWORD Gmail ならアプリパスワード（2 段階認証後に発行）
 #   MAIL_TO       通知の受信先
 # 任意: SMTP_PORT（未設定時はスクリプト側で 587）、MAIL_FROM（未設定時は SMTP_USER と同じ）、MAIL_SUBJECT
+# 任意: Notify Email の env — INFOGRAPHIC_URL で図解を本文に直リンク（GitHub 上の HTML）。
+#       INFOGRAPHIC_ATTACH=0 と併用すると添付なし・本文リンクのみ。
 # 通知: 定期実行は「コミットがあったとき」のみ。手動（workflow_dispatch）はその時点の内容を送るため常に試行する。
 name: Mix Online 発売記事レポート
 
@@ -85,4 +87,8 @@ jobs:
           MAIL_SUBJECT: "Mix Online 発売記事: 新規検出"
           NEW_COUNT: ${{ steps.fetch.outputs.new_count }}
           LINK: ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/reports/latest.html
+          # 図解を本文に直リンク（raw ならブラウザで HTML が開きやすい）
+          # ファイル名は ASCII（raw URL の 404 防止・プライベートリポジトリは別途 README 参照）
+          INFOGRAPHIC_URL: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/reports/infographic_tukysa.html
+          INFOGRAPHIC_ATTACH: "0"
         run: python scripts/send_report_email.py
