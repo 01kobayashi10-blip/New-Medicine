@@ -19,6 +19,7 @@ import feedparser
 ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = ROOT / "data" / "processed_items.json"
 REPORT_PATH = ROOT / "reports" / "latest.html"
+NOTIFY_LATEST_PATH = ROOT / "reports" / "notify_latest.json"
 
 DEFAULT_RSS = (
     "https://www.mixonline.jp/DesktopModules/MixOnline_Rss/MixOnlinerss.aspx?rssmode=3"
@@ -135,6 +136,18 @@ def append_github_output(**pairs: str) -> None:
             f.write(f"{k}={v}\n")
 
 
+def write_notify_latest(rows: list[tuple[str, str, str]], top_n: int) -> None:
+    """メール/Slack 用: RSS 上の「発売」記事の先頭 top_n 件（通常は新しい順）。"""
+    slice_rows = rows[: max(0, top_n)]
+    items = [
+        {"title": t, "link": u, "published": p} for t, u, p in slice_rows
+    ]
+    NOTIFY_LATEST_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(NOTIFY_LATEST_PATH, "w", encoding="utf-8") as f:
+        json.dump({"items": items}, f, ensure_ascii=False, indent=2)
+        f.write("\n")
+
+
 def main() -> int:
     rss_url = os.environ.get("RSS_URL", DEFAULT_RSS)
     try:
@@ -180,6 +193,7 @@ def main() -> int:
     )
 
     if not matched:
+        write_notify_latest([], int(os.environ.get("EMAIL_TOP_N", "5")))
         print("No 発売 items in current RSS; leaving reports and state unchanged.")
         return 0
 
@@ -193,6 +207,9 @@ def main() -> int:
         elif e.get("updated"):
             published = e["updated"]
         rows.append((title, link, published))
+
+    top_n = int(os.environ.get("EMAIL_TOP_N", "5"))
+    write_notify_latest(rows, top_n)
 
     if new_entries:
         updated = processed | {stable_id(e) for e in new_entries}

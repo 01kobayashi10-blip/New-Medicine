@@ -3,10 +3,58 @@
 
 from __future__ import annotations
 
+import json
 import os
 import smtplib
 import sys
 from email.message import EmailMessage
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+NOTIFY_LATEST_PATH = ROOT / "reports" / "notify_latest.json"
+
+
+def load_latest_items() -> list[dict[str, str]]:
+    if not NOTIFY_LATEST_PATH.is_file():
+        return []
+    try:
+        with open(NOTIFY_LATEST_PATH, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return []
+    items = data.get("items")
+    if not isinstance(items, list):
+        return []
+    out: list[dict[str, str]] = []
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+        title = str(it.get("title") or "").strip()
+        link = str(it.get("link") or "").strip()
+        if not link:
+            continue
+        out.append(
+            {
+                "title": title or link,
+                "link": link,
+                "published": str(it.get("published") or "").strip(),
+            }
+        )
+    return out
+
+
+def format_latest_hatsubai_block(items: list[dict[str, str]]) -> str:
+    if not items:
+        return "（このRSS取得では、タイトルに「発売」を含む記事はありませんでした。）"
+    lines: list[str] = []
+    for it in items:
+        title = it["title"]
+        link = it["link"]
+        pub = it.get("published") or ""
+        suffix = f" ({pub})" if pub else ""
+        lines.append(f"- {title}{suffix}")
+        lines.append(f"  {link}")
+    return "\n".join(lines)
 
 
 def main() -> int:
@@ -38,13 +86,15 @@ def main() -> int:
     if ev == "workflow_dispatch":
         if subject == default_subject:
             subject = "【手動実行】Mix Online 発売記事レポート"
+        latest_block = format_latest_hatsubai_block(load_latest_items())
         lines = [
             "【手動実行】このメールは GitHub Actions の手動実行に基づき送付しています。",
             "",
             f"本RSS取得時点の新規件数: {new_count} 件",
             "",
-            "レポート（リポジトリ上の最新コミット）:",
-            link if link else "（リンクなし）",
+            "最新の新薬はこちら",
+            "",
+            latest_block,
         ]
     else:
         lines = [
