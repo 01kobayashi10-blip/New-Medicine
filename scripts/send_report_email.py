@@ -5,7 +5,9 @@
   図解などの .html ファイルへのパス（相対はカレントディレクトリ、なければリポジトリルートから解決）。
   ファイルが存在し、かつ INFOGRAPHIC_ATTACH が無効でないとき multipart/mixed で添付。
 任意: INFOGRAPHIC_ATTACHMENT_NAME — 添付ファイル名（未設定時は実ファイルの basename）
-任意: INFOGRAPHIC_URL — 図解 HTML をブラウザで開く URL。設定時は平文本文の末尾に「ミクス記事の URL と同様」2行で追記する。
+任意: INFOGRAPHIC_URL — 図解 HTML をブラウザで開く URL。設定時は平文本文の末尾に追記する。
+  raw.githubusercontent の .html は text/plain になりソース表示になるため、表示用には https://htmlpreview.github.io/?（raw URL） 等の利用を検討する。
+  htmlpreview は外部 JS（cdn.tailwindcss.com）が CSP で無効になりやすいため、図解 HTML はインライン CSS 化した reports/infographic_tukysa.html を想定する。
 任意: INFOGRAPHIC_ATTACH — "0" / "false" / "no" / "off" のいずれかならファイル添付しない（URL のみにしたいとき）。未設定時はパスが有効なら添付する。
 """
 

@@ -87,8 +87,8 @@ jobs:
           MAIL_SUBJECT: "Mix Online 発売記事: 新規検出"
           NEW_COUNT: ${{ steps.fetch.outputs.new_count }}
           LINK: ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/reports/latest.html
-          # 図解を本文に直リンク（raw ならブラウザで HTML が開きやすい）
-          # ファイル名は ASCII（raw URL の 404 防止・プライベートリポジトリは別途 README 参照）
-          INFOGRAPHIC_URL: https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/reports/infographic_tukysa.html
+          # 図解を本文に直リンク。raw.githubusercontent は .html を text/plain で返すためブラウザがソース表示になる。
+          # htmlpreview で包むとレンダリング表示になる（本番向けは GitHub Pages 等への移行を推奨）。
+          INFOGRAPHIC_URL: https://htmlpreview.github.io/?https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/reports/infographic_tukysa.html
           INFOGRAPHIC_ATTACH: "0"
         run: python scripts/send_report_email.py
