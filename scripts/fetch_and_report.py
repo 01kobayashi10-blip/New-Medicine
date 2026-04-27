@@ -20,6 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = ROOT / "data" / "processed_items.json"
 REPORT_PATH = ROOT / "reports" / "latest.html"
 NOTIFY_LATEST_PATH = ROOT / "reports" / "notify_latest.json"
+GENERATE_QUEUE_PATH = ROOT / "reports" / "generate_queue.json"
 
 DEFAULT_RSS = (
     "https://www.mixonline.jp/DesktopModules/MixOnline_Rss/MixOnlinerss.aspx?rssmode=3"
@@ -136,6 +137,37 @@ def append_github_output(**pairs: str) -> None:
             f.write(f"{k}={v}\n")
 
 
+def write_generate_queue(new_entries: list[feedparser.FeedParserDict]) -> None:
+    """図解生成用: 本実行で新規の RSS のみ書く。新規なしのときはファイルを消してコミットノイズを防ぐ。"""
+    if not new_entries:
+        if GENERATE_QUEUE_PATH.is_file():
+            GENERATE_QUEUE_PATH.unlink()
+        return
+    items: list[dict[str, str]] = []
+    for e in new_entries:
+        sid = stable_id(e)
+        if not sid:
+            continue
+        title = e.get("title") or ""
+        link = canonical_item_id((e.get("link") or "").strip())
+        published = ""
+        if e.get("published"):
+            published = e["published"]
+        elif e.get("updated"):
+            published = e["updated"]
+        items.append(
+            {"stable_id": sid, "title": title, "link": link, "published": published}
+        )
+    payload = {
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "items": items,
+    }
+    GENERATE_QUEUE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(GENERATE_QUEUE_PATH, "w", encoding="utf-8") as f:
+        json.dump(payload, f, ensure_ascii=False, indent=2)
+        f.write("\n")
+
+
 def write_notify_latest(rows: list[tuple[str, str, str]], top_n: int) -> None:
     """メール/Slack 用: RSS 上の「発売」記事の先頭 top_n 件（通常は新しい順）。"""
     slice_rows = rows[: max(0, top_n)]
@@ -194,6 +226,7 @@ def main() -> int:
 
     if not matched:
         write_notify_latest([], int(os.environ.get("EMAIL_TOP_N", "5")))
+        write_generate_queue([])
         print("No 発売 items in current RSS; leaving reports and state unchanged.")
         return 0
 
@@ -227,6 +260,8 @@ def main() -> int:
     REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(REPORT_PATH, "w", encoding="utf-8") as f:
         f.write(build_html(rows, new_count, meta_line))
+
+    write_generate_queue(new_entries)
 
     if new_count:
         print(f"Wrote {REPORT_PATH.relative_to(ROOT)} and updated state ({new_count} new).")

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ title_display }} — 図解（v1）</title>
+  <style>
+    body { font-family: system-ui, "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif; max-width: 48rem; margin: 0 auto; padding: 1.5rem 1rem; color: #1e293b; background: #f8fafc; }
+    header { margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 2px solid #0369a1; }
+    h1 { font-size: 1.35rem; margin: 0 0 0.35rem; color: #0c4a6e; }
+    .sub { font-size: 0.9rem; color: #64748b; }
+    .warn { background: #fffbeb; border: 1px solid #fbbf24; color: #92400e; padding: 0.75rem 1rem; border-radius: 0.5rem; font-size: 0.875rem; margin-bottom: 1.25rem; }
+    .meta { font-size: 0.8rem; color: #64748b; margin-bottom: 1rem; }
+    section { background: #fff; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 1rem 1.1rem; margin-bottom: 1rem; }
+    h2 { font-size: 1rem; margin: 0 0 0.5rem; color: #0c4a6e; }
+    .body { font-size: 0.875rem; line-height: 1.6; white-space: pre-wrap; }
+    a { color: #0369a1; }
+    footer { margin-top: 2rem; font-size: 0.75rem; color: #64748b; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>{{ title_display }}</h1>
+    <p class="sub">製品概要・効能（4）・作用機序（18）・臨床（17）・副作用（11）・用法メモ（6・7・10）— 抜粋は PMDA 添付文書に基づく（v1）</p>
+  </header>
+
+  <p class="warn">{{ disclaimer }}</p>
+
+  <p class="meta">生成: {{ generated_at }} / stable_id: <code>{{ stable_id }}</code></p>
+  <p class="meta">ミクス: <a href="{{ rss_link }}" rel="noopener noreferrer">{{ rss_link }}</a></p>
+  {% if pmda_url %}
+  <p class="meta">PMDA: <a href="{{ pmda_url }}" rel="noopener noreferrer">{{ pmda_url }}</a></p>
+  {% endif %}
+
+  <section>
+    <h2>識別・販売名（章4より前の想定領域）</h2>
+    <div class="body">{{ section_ident or "（未抽出。override の URL からの自動抜粋は次フェーズ）" }}</div>
+  </section>
+  <section>
+    <h2>4. 効能又は効果</h2>
+    <div class="body">{{ section_4 or "—" }}</div>
+  </section>
+  <section>
+    <h2>18. 薬効薬理</h2>
+    <div class="body">{{ section_18 or "—" }}</div>
+  </section>
+  <section>
+    <h2>17. 臨床成績</h2>
+    <div class="body">{{ section_17 or "—" }}</div>
+  </section>
+  <section>
+    <h2>11. 副作用</h2>
+    <div class="body">{{ section_11 or "—" }}</div>
+  </section>
+  <section>
+    <h2>6・7・10 用法・相互作用（メモ）</h2>
+    <div class="body">{{ section_6710 or "—" }}</div>
+  </section>
+
+  <footer>
+    出典: PMDA 公開の添付文書（抜粋・自動生成）。診療・服薬は医師・薬剤師の指示および最新の添付文書に従ってください。KEGG 等の二次出典は v1 では用いていません。
+  </footer>
+</body>
+</html>

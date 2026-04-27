@@ -48,13 +48,24 @@ jobs:
           # メール/Slack に載せる「発売」記事の直近件数（既定 5）
           EMAIL_TOP_N: "5"
 
+      - name: Validate PMDA JSON
+        if: success()
+        run: python scripts/validate_pmda_data.py
+
+      - id: generate
+        name: Generate PMDA infographic HTML
+        if: success()
+        run: python scripts/generate_pmda_infographics.py
+
       - id: commit
         name: Commit and push if changed
         if: success()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/processed_items.json reports/latest.html
+          git add data/processed_items.json data/pmda_overrides.json data/pmda_multi_candidates.json \
+            reports/latest.html reports/generate_queue.json
+          find reports -maxdepth 1 -name 'infographic_*.html' -print0 | xargs -0 -r git add
           if git diff --staged --quiet; then
             echo "committed=false" >> "$GITHUB_OUTPUT"
             echo "No file changes to commit."
@@ -87,8 +98,7 @@ jobs:
           MAIL_SUBJECT: "Mix Online 発売記事: 新規検出"
           NEW_COUNT: ${{ steps.fetch.outputs.new_count }}
           LINK: ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/reports/latest.html
-          # 図解を本文に直リンク。raw.githubusercontent は .html を text/plain で返すためブラウザがソース表示になる。
-          # htmlpreview で包むとレンダリング表示になる（本番向けは GitHub Pages 等への移行を推奨）。
-          INFOGRAPHIC_URL: https://htmlpreview.github.io/?https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/reports/infographic_tukysa.html
+          # 図解（先頭 1 件・htmlpreview）。generate スクリプトが GITHUB_OUTPUT に書く完全 URL。
+          INFOGRAPHIC_URL: ${{ steps.generate.outputs.infographic_url }}
           INFOGRAPHIC_ATTACH: "0"
         run: python scripts/send_report_email.py
