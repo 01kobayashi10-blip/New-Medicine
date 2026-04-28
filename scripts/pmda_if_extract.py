@@ -246,6 +246,47 @@ def _slice_between(text: str, start_pat: re.Pattern, end_pat: re.Pattern | None)
     return text[start:].strip()
 
 
+def _strip_leading_pdf_noise_lines(s: str) -> str:
+    """PDF 先頭の頁番号・断片行などを落とす。"""
+    lines = (s or "").split("\n")
+    i = 0
+    while i < len(lines):
+        stripped = lines[i].strip()
+        if stripped == "":
+            i += 1
+            continue
+        if re.fullmatch(r"[0-9０-９]{1,6}", stripped):
+            i += 1
+            continue
+        if len(stripped) <= 2 and re.fullmatch(r"[A-Za-z0-9０-９]+", stripped):
+            i += 1
+            continue
+        break
+    return "\n".join(lines[i:]).strip()
+
+
+def _ident_before_chapter4(full_text: str, pos_ch4: int) -> str:
+    """章4直前までのうち、可能なら「1. 警告」以降に寄せる。"""
+    raw = (full_text or "")[:pos_ch4].strip()
+    if not raw:
+        return ""
+    m1 = re.search(r"(?m)^\s*[1１][\.．]\s*警告", raw)
+    if m1:
+        return raw[m1.start() :].strip()
+    return _strip_leading_pdf_noise_lines(raw)
+
+
+def _strip_redundant_heading_line(body: str, line_pat: re.Pattern) -> str:
+    """本文先頭が章見出しと同一なら 1 行削除（見出しは HTML 側で表示するため）。"""
+    lines = (body or "").split("\n")
+    if not lines:
+        return body or ""
+    first = lines[0].strip()
+    if line_pat.match(first):
+        return "\n".join(lines[1:]).strip()
+    return (body or "").strip()
+
+
 def split_if_sections(text: str, max_len: int) -> dict[str, str]:
     t = normalize_if_headings(normalize_if_text(text))
     # 新記載要領: 「4. 効能又は効果」… 行頭想定
@@ -260,25 +301,35 @@ def split_if_sections(text: str, max_len: int) -> dict[str, str]:
     p19 = re.compile(r"(?m)^\s*19[\.．]\s*有効成分に関する理化学的知見")
 
     sec4 = _slice_between(t, p4, p5)
+    sec4 = _strip_redundant_heading_line(sec4, re.compile(r"^\s*4[\.．]\s*効能又は効果\s*$"))
     sec17 = _slice_between(t, p17, p18)
+    sec17 = _strip_redundant_heading_line(sec17, re.compile(r"^\s*17[\.．]\s*臨床成績\s*$"))
     sec18 = _slice_between(t, p18, p19)
+    sec18 = _strip_redundant_heading_line(sec18, re.compile(r"^\s*18[\.．]\s*薬効薬理\s*$"))
     p12 = re.compile(r"(?m)^\s*12[\.．]\s*臨床検査結果に及ぼす影響")
     sec11 = _slice_between(t, p11, p12)
+    sec11 = _strip_redundant_heading_line(sec11, re.compile(r"^\s*11[\.．]\s*副作用\s*$"))
     block6 = _slice_between(t, p6, p8)
+    block6 = _strip_redundant_heading_line(block6, re.compile(r"^\s*6[\.．]\s*用法及び用量\s*$"))
     block10 = _slice_between(t, p10, p11)
+    block10 = _strip_redundant_heading_line(block10, re.compile(r"^\s*10[\.．]\s*相互作用\s*$"))
     sec6710 = "\n\n".join(x for x in (block6, block10) if x).strip()
 
     m4 = p4.search(t)
-    ident = (t[: m4.start()].strip() if m4 else "")[: max_len * 2]
+    if m4:
+        ident = _ident_before_chapter4(t, m4.start())
+    else:
+        ident = ""
 
-    def clip(s: str) -> str:
+    def clip(s: str, *, limit: int | None = None) -> str:
+        lim = max_len if limit is None else limit
         s = (s or "").strip()
-        if len(s) <= max_len:
+        if len(s) <= lim:
             return s
-        return s[: max_len].rstrip() + "\n…（以下省略）"
+        return s[:lim].rstrip() + "\n…（以下省略）"
 
     return {
-        "section_ident": clip(ident),
+        "section_ident": clip(ident, limit=max_len * 2),
         "section_4": clip(sec4),
         "section_17": clip(sec17),
         "section_18": clip(sec18),

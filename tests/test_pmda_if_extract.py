@@ -56,6 +56,24 @@ class TestExtractPdfPairs(unittest.TestCase):
 
 
 class TestSplitIfSections(unittest.TestCase):
+    def test_strips_leading_page_noise_before_ident(self) -> None:
+        text = """
+002
+1
+
+1. 警告
+以下警告
+
+4. 効能又は効果
+効能本文
+
+5. 効能又は効果に関連する注意
+注意
+"""
+        d = pmda_if_extract.split_if_sections(text, max_len=5000)
+        self.assertNotIn("002", d["section_ident"])
+        self.assertIn("1. 警告", d["section_ident"])
+
     def test_basic_headings(self) -> None:
         text = """
 1. 警告
@@ -84,6 +102,7 @@ class TestSplitIfSections(unittest.TestCase):
 """
         d = pmda_if_extract.split_if_sections(text, max_len=5000)
         self.assertIn("効能本文", d["section_4"])
+        self.assertNotIn("4. 効能又は効果", d["section_4"].split("\n")[0])
         self.assertIn("臨床", d["section_17"])
         self.assertIn("薬理", d["section_18"])
         self.assertIn("副作用本文", d["section_11"])

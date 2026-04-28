@@ -4,64 +4,119 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{{ title_display }} — 図解（v1）</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: { dark: '#0c4a6e', mid: '#0369a1', light: '#e0f2fe' }
+          },
+          fontFamily: {
+            sans: ['"Hiragino Sans"', '"Hiragino Kaku Gothic ProN"', 'Meiryo', 'sans-serif']
+          }
+        }
+      }
+    };
+  </script>
   <style>
-    body { font-family: system-ui, "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif; max-width: 48rem; margin: 0 auto; padding: 1.5rem 1rem; color: #1e293b; background: #f8fafc; }
-    header { margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 2px solid #0369a1; }
-    h1 { font-size: 1.35rem; margin: 0 0 0.35rem; color: #0c4a6e; }
-    .sub { font-size: 0.9rem; color: #64748b; }
-    .warn { background: #fffbeb; border: 1px solid #fbbf24; color: #92400e; padding: 0.75rem 1rem; border-radius: 0.5rem; font-size: 0.875rem; margin-bottom: 1.25rem; }
-    .meta { font-size: 0.8rem; color: #64748b; margin-bottom: 1rem; }
-    section { background: #fff; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 1rem 1.1rem; margin-bottom: 1rem; }
-    h2 { font-size: 1rem; margin: 0 0 0.5rem; color: #0c4a6e; }
-    .body { font-size: 0.875rem; line-height: 1.6; white-space: pre-wrap; }
-    a { color: #0369a1; }
-    footer { margin-top: 2rem; font-size: 0.75rem; color: #64748b; }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: #fff !important; }
+      .shadow-lg, .shadow-md, .shadow-sm { box-shadow: none !important; }
+    }
   </style>
 </head>
-<body>
-  <header>
-    <h1>{{ title_display }}</h1>
-    <p class="sub">製品概要・効能（4）・作用機序（18）・臨床（17）・副作用（11）・用法メモ（6・7・10）— 抜粋は PMDA 添付文書に基づく（v1）</p>
+<body class="min-h-screen bg-slate-50 text-slate-800 antialiased">
+  <header class="relative bg-gradient-to-br from-brand-dark via-brand-mid to-sky-600 text-white shadow-lg">
+    <div class="mx-auto max-w-5xl px-4 py-10 pb-10 pt-10 sm:px-6">
+      <div class="max-w-4xl">
+        <p class="text-sm font-medium uppercase tracking-widest text-sky-200/90">ミクス発売記事ベース・PMDA添付文書抜粋（自動生成）</p>
+        <h1 class="mt-2 text-2xl font-bold tracking-tight break-words sm:text-3xl">{{ title_display }}</h1>
+        <p class="mt-3 max-w-3xl text-base text-sky-100">効能（4）・薬効薬理（18）・臨床成績（17）・副作用（11）・用法・相互作用（6・7・10）</p>
+      </div>
+    </div>
   </header>
 
-  <p class="warn">{{ disclaimer }}</p>
+  <main class="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+    <p class="mb-8 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-950">
+      {{ disclaimer }}
+    </p>
 
-  <p class="meta">生成: {{ generated_at }} / stable_id: <code>{{ stable_id }}</code></p>
-  <p class="meta">ミクス: <a href="{{ rss_link }}" rel="noopener noreferrer">{{ rss_link }}</a></p>
-  {% if pmda_url %}
-  <p class="meta">PMDA: <a href="{{ pmda_url }}" rel="noopener noreferrer">{{ pmda_url }}</a></p>
-  {% endif %}
-  {% if source_pdf_url %}
-  <p class="meta">添付文書 PDF（自動取得元）: <a href="{{ source_pdf_url }}" rel="noopener noreferrer">{{ source_pdf_url }}</a></p>
-  {% endif %}
+    <div class="mb-10 rounded-xl border border-slate-200 bg-white/90 px-4 py-3 text-xs leading-relaxed text-slate-600 shadow-sm">
+      <p><span class="font-semibold text-slate-500">生成</span> {{ generated_at }} / <span class="font-semibold text-slate-500">stable_id</span> <code class="rounded bg-slate-100 px-1 py-0.5 text-[11px]">{{ stable_id }}</code></p>
+      <p class="mt-1"><span class="font-semibold text-slate-500">ミクス</span> <a class="font-medium text-sky-800 underline decoration-sky-600 underline-offset-2 hover:text-sky-950" href="{{ rss_link }}" rel="noopener noreferrer">{{ rss_link }}</a></p>
+      {% if pmda_url %}
+      <p class="mt-1"><span class="font-semibold text-slate-500">PMDA</span> <a class="font-medium text-sky-800 underline decoration-sky-600 underline-offset-2 hover:text-sky-950" href="{{ pmda_url }}" rel="noopener noreferrer">{{ pmda_url }}</a></p>
+      {% endif %}
+      {% if source_pdf_url %}
+      <p class="mt-1"><span class="font-semibold text-slate-500">添付文書 PDF</span> <a class="font-medium text-sky-800 underline decoration-sky-600 underline-offset-2 hover:text-sky-950" href="{{ source_pdf_url }}" rel="noopener noreferrer">{{ source_pdf_url }}</a></p>
+      {% endif %}
+    </div>
 
-  <section>
-    <h2>識別・販売名（章4より前の想定領域）</h2>
-    <div class="body">{{ section_ident or "（識別領域の自動抽出なし）" }}</div>
-  </section>
-  <section>
-    <h2>4. 効能又は効果</h2>
-    <div class="body">{{ section_4 or "—" }}</div>
-  </section>
-  <section>
-    <h2>18. 薬効薬理</h2>
-    <div class="body">{{ section_18 or "—" }}</div>
-  </section>
-  <section>
-    <h2>17. 臨床成績</h2>
-    <div class="body">{{ section_17 or "—" }}</div>
-  </section>
-  <section>
-    <h2>11. 副作用</h2>
-    <div class="body">{{ section_11 or "—" }}</div>
-  </section>
-  <section>
-    <h2>6・7・10 用法・相互作用（メモ）</h2>
-    <div class="body">{{ section_6710 or "—" }}</div>
-  </section>
+    <section class="mb-12">
+      <h2 class="mb-4 flex items-center gap-2 text-xl font-bold text-brand-dark">
+        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-mid text-sm text-white">1</span>
+        識別・製品情報（添付文書 章4より前）
+      </h2>
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">{{ section_ident or "（識別領域の自動抽出なし）" }}</div>
+      </div>
+    </section>
 
-  <footer>
-    出典: PMDA 公開の添付文書（抜粋・自動生成）。診療・服薬は医師・薬剤師の指示および最新の添付文書に従ってください。KEGG 等の二次出典は v1 では用いていません。
-  </footer>
+    <section class="mb-12">
+      <h2 class="mb-4 flex items-center gap-2 text-xl font-bold text-brand-dark">
+        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-mid text-sm text-white">4</span>
+        効能又は効果
+      </h2>
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">{{ section_4 or "—" }}</div>
+      </div>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="mb-4 flex items-center gap-2 text-xl font-bold text-brand-dark">
+        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-mid text-sm text-white">18</span>
+        薬効薬理
+      </h2>
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">{{ section_18 or "—" }}</div>
+      </div>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="mb-4 flex items-center gap-2 text-xl font-bold text-brand-dark">
+        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-mid text-sm text-white">17</span>
+        臨床成績
+      </h2>
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">{{ section_17 or "—" }}</div>
+      </div>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="mb-4 flex items-center gap-2 text-xl font-bold text-brand-dark">
+        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-mid text-sm text-white">11</span>
+        副作用
+      </h2>
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">{{ section_11 or "—" }}</div>
+      </div>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="mb-4 flex items-center gap-2 text-xl font-bold text-brand-dark">
+        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-mid text-sm text-white">6–10</span>
+        用法・用量・相互作用（メモ）
+      </h2>
+      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">{{ section_6710 or "—" }}</div>
+      </div>
+    </section>
+
+    <footer class="border-t border-slate-200 pt-8 text-xs leading-relaxed text-slate-500">
+      出典: PMDA 公開の添付文書（抜粋・自動生成）。診療・服薬は医師・薬剤師の指示および最新の添付文書に従ってください。KEGG 等の二次出典は v1 では用いていません。
+    </footer>
+  </main>
 </body>
 </html>
