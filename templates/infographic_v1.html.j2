@@ -31,10 +31,13 @@
   {% if pmda_url %}
   <p class="meta">PMDA: <a href="{{ pmda_url }}" rel="noopener noreferrer">{{ pmda_url }}</a></p>
   {% endif %}
+  {% if source_pdf_url %}
+  <p class="meta">添付文書 PDF（自動取得元）: <a href="{{ source_pdf_url }}" rel="noopener noreferrer">{{ source_pdf_url }}</a></p>
+  {% endif %}
 
   <section>
     <h2>識別・販売名（章4より前の想定領域）</h2>
-    <div class="body">{{ section_ident or "（未抽出。override の URL からの自動抜粋は次フェーズ）" }}</div>
+    <div class="body">{{ section_ident or "（識別領域の自動抽出なし）" }}</div>
   </section>
   <section>
     <h2>4. 効能又は効果</h2>

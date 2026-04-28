@@ -38,9 +38,8 @@ class PmdaCandidate:
     detail_url: str
 
 
-def _throttle() -> None:
-    if os.environ.get("PMDA_SEARCH_DISABLED", "").strip() in ("1", "true", "yes"):
-        return
+def throttle_pmda_http() -> None:
+    """検索以外の PMDA 系 GET（添付文書 HTML/PDF 等）の直前にも呼ぶ。間隔は PMDA_SEARCH_MIN_INTERVAL_SEC。"""
     try:
         delay = float(os.environ.get("PMDA_SEARCH_MIN_INTERVAL_SEC", _DEFAULT_MIN_INTERVAL))
     except ValueError:
@@ -52,6 +51,12 @@ def _throttle() -> None:
         if wait > 0:
             time.sleep(wait)
         _last_request_mono = time.monotonic()
+
+
+def _throttle() -> None:
+    if os.environ.get("PMDA_SEARCH_DISABLED", "").strip() in ("1", "true", "yes"):
+        return
+    throttle_pmda_http()
 
 
 def _parse_form_pairs(html: str) -> list[tuple[str, str]]:

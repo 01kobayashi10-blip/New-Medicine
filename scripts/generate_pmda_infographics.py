@@ -14,6 +14,7 @@ _SCRIPTS = Path(__file__).resolve().parent
 ROOT = _SCRIPTS.parent
 sys.path.insert(0, str(_SCRIPTS))
 
+import pmda_if_extract
 import pmda_search
 import query_builder
 import rss_pmda_resolve
@@ -78,6 +79,13 @@ def render_html(
     rss_link: str,
     pmda_url: str,
     disclaimer: str,
+    source_pdf_url: str = "",
+    section_ident: str = "",
+    section_4: str = "",
+    section_18: str = "",
+    section_17: str = "",
+    section_11: str = "",
+    section_6710: str = "",
 ) -> str:
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATE_DIR)),
@@ -89,15 +97,54 @@ def render_html(
         stable_id=stable_id,
         rss_link=rss_link,
         pmda_url=pmda_url,
+        source_pdf_url=source_pdf_url,
         disclaimer=disclaimer,
         generated_at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        section_ident="",
-        section_4="",
-        section_18="",
-        section_17="",
-        section_11="",
-        section_6710="",
+        section_ident=section_ident,
+        section_4=section_4,
+        section_18=section_18,
+        section_17=section_17,
+        section_11=section_11,
+        section_6710=section_6710,
     )
+
+
+def _empty_sections() -> dict[str, str]:
+    return {
+        "section_ident": "",
+        "section_4": "",
+        "section_17": "",
+        "section_18": "",
+        "section_11": "",
+        "section_6710": "",
+    }
+
+
+def _http_timeout() -> int:
+    try:
+        return max(10, int(os.environ.get("PMDA_IF_HTTP_TIMEOUT", "60")))
+    except ValueError:
+        return 60
+
+
+def _fill_from_general_list(
+    pmda_url: str,
+    rss_title: str,
+) -> tuple[dict[str, str], str, str]:
+    """GeneralList から PDF 抜粋。(sections, source_pdf_url, log_reason)。"""
+    empty = _empty_sections()
+    if not pmda_url.strip():
+        return empty, "", "no_pmda_url"
+    if not pmda_if_extract.is_general_list_url(pmda_url):
+        return empty, "", "skip_not_general_list"
+    out, reason = pmda_if_extract.extract_from_general_list(
+        pmda_url.strip(),
+        rss_title,
+        timeout=_http_timeout(),
+    )
+    if not out:
+        return empty, "", reason
+    return out.sections, out.pdf_url, reason
 
 
 def process_item(item: dict, overrides: dict) -> tuple[str | None, str]:
@@ -114,18 +161,41 @@ def process_item(item: dict, overrides: dict) -> tuple[str | None, str]:
 
     if sid in overrides:
         pmda_url = (overrides[sid].get("pmda_package_url") or "").strip()
-        disc = (
-            "override により PMDA URL が指定されています。章別の自動抜粋は次フェーズで追加予定です。"
-        )
+        sec, src_pdf, ex_reason = _fill_from_general_list(pmda_url, title)
+        if src_pdf:
+            disc = (
+                "override により指定された GeneralList から添付文書 PDF を取得し、"
+                "章別に自動抜粋しました（文字数上限で切り詰めています）。"
+                "診療・服薬の判断は必ず最新の添付文書および医療者の指示に従ってください。"
+            )
+            if "sections_empty" in ex_reason:
+                disc += " 章見出しの自動検出が弱い可能性があります（PDF レイアウトによる）。"
+        elif pmda_if_extract.is_general_list_url(pmda_url):
+            disc = (
+                "override の PMDA URL は GeneralList ですが、添付文書の自動取得に失敗しました（"
+                f"{ex_reason}）。手動で添付文書を確認するか、URL を修正してください。"
+            )
+        else:
+            disc = (
+                "override により PMDA URL が指定されています。この URL は GeneralList 以外のため、"
+                "v1 では添付文書の自動抜粋を行っていません（GeneralList の URL を指定すると抜粋されます）。"
+            )
         html = render_html(
             title_display=title[:200] + ("…" if len(title) > 200 else ""),
             stable_id=sid,
             rss_link=link,
             pmda_url=pmda_url,
             disclaimer=disc,
+            source_pdf_url=src_pdf,
+            section_ident=sec["section_ident"],
+            section_4=sec["section_4"],
+            section_17=sec["section_17"],
+            section_18=sec["section_18"],
+            section_11=sec["section_11"],
+            section_6710=sec["section_6710"],
         )
         out_path.write_text(html, encoding="utf-8")
-        return f"reports/{out_name}", "override"
+        return f"reports/{out_name}", "override_if" if src_pdf else "override"
 
     c1 = pmda_search.search_candidates(q1)
     query_used = q1
@@ -163,12 +233,24 @@ def process_item(item: dict, overrides: dict) -> tuple[str | None, str]:
         "RSS タイトルを見直してください（発売手前全文・「、」以降・中黒「・」以降で再検索します）。"
     )
     picked = rss_pmda_resolve.pick_if_single_strong(query_used, candidates)
+    sec = _empty_sections()
+    src_pdf = ""
+    ex_reason = ""
     if picked:
         pmda_url = picked.detail_url
-        disc = (
-            "候補 1 件・強一致。章（4・17・18 等）の本文は添付文書からの自動抜粋が未実装のため、"
-            "リンク先 PMDA ページでご確認ください。"
-        )
+        sec, src_pdf, ex_reason = _fill_from_general_list(pmda_url, title)
+        if src_pdf:
+            disc = (
+                "候補 1 件・強一致。添付文書 PDF から章を自動抜粋しました（文字数上限あり）。"
+                "診療・服薬の判断は必ず最新の添付文書および医療者の指示に従ってください。"
+            )
+            if "sections_empty" in ex_reason:
+                disc += " 章見出しの自動検出が弱い可能性があります（PDF レイアウトによる）。"
+        else:
+            disc = (
+                "候補 1 件・強一致。GeneralList は取得できましたが、添付文書 PDF の取得または"
+                f"章抜粋に失敗しました（{ex_reason}）。リンク先で添付文書をご確認ください。"
+            )
     elif len(candidates) == 1:
         disc = "候補 1 件ですが強一致条件を満たさないため、PMDA URL は未設定です。override または検索クエリの調整が必要です。"
 
@@ -178,10 +260,17 @@ def process_item(item: dict, overrides: dict) -> tuple[str | None, str]:
         rss_link=link,
         pmda_url=pmda_url,
         disclaimer=disc,
+        source_pdf_url=src_pdf,
+        section_ident=sec["section_ident"],
+        section_4=sec["section_4"],
+        section_17=sec["section_17"],
+        section_18=sec["section_18"],
+        section_11=sec["section_11"],
+        section_6710=sec["section_6710"],
     )
     REPORTS.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding="utf-8")
-    return f"reports/{out_name}", "skeleton"
+    return f"reports/{out_name}", "extract" if src_pdf else "skeleton"
 
 
 def append_github_output(**pairs: str) -> None:
