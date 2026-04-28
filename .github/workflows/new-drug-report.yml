@@ -64,7 +64,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/processed_items.json data/pmda_overrides.json data/pmda_multi_candidates.json \
-            reports/latest.html reports/generate_queue.json
+            reports/latest.html
+          # 新規なし実行では fetch が generate_queue を削除する。未追跡のとき git add が失敗しないよう --ignore-missing を付ける。
+          git add --ignore-missing reports/generate_queue.json
           find reports -maxdepth 1 -name 'infographic_*.html' -print0 | xargs -0 -r git add
           if git diff --staged --quiet; then
             echo "committed=false" >> "$GITHUB_OUTPUT"
