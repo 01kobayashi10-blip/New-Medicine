@@ -133,6 +133,10 @@ def process_item(item: dict, overrides: dict) -> tuple[str | None, str]:
     if len(candidates) == 0 and q2:
         candidates = pmda_search.search_candidates(q2)
         query_used = q2 or q1
+    q3 = query_builder.query_pass3_middle_dot(title)
+    if len(candidates) == 0 and q3:
+        candidates = pmda_search.search_candidates(q3)
+        query_used = q3
 
     if len(candidates) > 1:
         multi = load_json(MULTI_PATH, {"version": 1, "updated_at": None, "items": []})
@@ -156,13 +160,14 @@ def process_item(item: dict, overrides: dict) -> tuple[str | None, str]:
     pmda_url = ""
     disc = (
         "PMDA 検索で候補は得られませんでした。`data/pmda_overrides.json` に stable_id を追加するか、"
-        "RSS タイトル（発売手前・第2クエリ）を見直してください。"
+        "RSS タイトルを見直してください（発売手前全文・「、」以降・中黒「・」以降で再検索します）。"
     )
     picked = rss_pmda_resolve.pick_if_single_strong(query_used, candidates)
     if picked:
         pmda_url = picked.detail_url
         disc = (
-            "候補 1 件・強一致。章別の自動抜粋は次フェーズで追加予定です。"
+            "候補 1 件・強一致。章（4・17・18 等）の本文は添付文書からの自動抜粋が未実装のため、"
+            "リンク先 PMDA ページでご確認ください。"
         )
     elif len(candidates) == 1:
         disc = "候補 1 件ですが強一致条件を満たさないため、PMDA URL は未設定です。override または検索クエリの調整が必要です。"

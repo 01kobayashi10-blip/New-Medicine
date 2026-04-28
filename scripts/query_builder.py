@@ -46,3 +46,18 @@ def query_pass2(title: str) -> str | None:
     if sub == q1:
         return None
     return sub
+
+
+def query_pass3_middle_dot(title: str) -> str | None:
+    """第3回: 発売手前の文字列で最後の中黒「・」以降（販売名寄り）。第1と同一なら None。"""
+    base = segment_before_release(title)
+    if "・" not in base:
+        return None
+    sub = base.rsplit("・", 1)[-1].strip()
+    sub = nfkc(sub)
+    if not sub:
+        return None
+    q1 = nfkc(base)
+    if sub == q1:
+        return None
+    return sub

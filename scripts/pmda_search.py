@@ -158,28 +158,14 @@ def _merge_rows(rows: list[tuple[str, str, str]]) -> list[PmdaCandidate]:
     return out
 
 
-def search_candidates(query: str, timeout: int = 30) -> list[PmdaCandidate]:
-    """販売名等のクエリで PMDA 医療用医薬品検索を行い、候補一覧を返す。"""
-    q = (query or "").strip()
-    if not q:
-        return []
-    if os.environ.get("PMDA_SEARCH_DISABLED", "").strip() in ("1", "true", "yes"):
-        return []
-
-    if len(q) > _MAX_NAME_LEN:
-        q = q[:_MAX_NAME_LEN]
-
-    name_radio = os.environ.get("PMDA_SEARCH_NAME_RADIO", "3").strip() or "3"
-    if name_radio not in ("1", "2", "3"):
-        name_radio = "3"
-    match_radio = os.environ.get("PMDA_SEARCH_MATCH_RADIO", "1").strip() or "1"
-    if match_radio not in ("1", "2"):
-        match_radio = "1"
-    list_rows = os.environ.get("PMDA_SEARCH_LIST_ROWS", "50").strip() or "50"
-    if list_rows not in ("10", "20", "30", "50", "100"):
-        list_rows = "50"
-
-    _throttle()
+def _one_search(
+    q: str,
+    timeout: int,
+    name_radio: str,
+    match_radio: str,
+    list_rows: str,
+) -> list[PmdaCandidate]:
+    """GET フォーム取得 → POST 検索 → 候補化（1 サイクル）。"""
     cj = http.cookiejar.CookieJar()
     opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
     opener.addheaders = [("User-Agent", USER_AGENT)]
@@ -232,3 +218,43 @@ def search_candidates(query: str, timeout: int = 30) -> list[PmdaCandidate]:
     if not rows:
         return []
     return _merge_rows(rows)
+
+
+def search_candidates(query: str, timeout: int = 30) -> list[PmdaCandidate]:
+    """販売名等のクエリで PMDA 医療用医薬品検索を行い、候補一覧を返す。
+
+    既定は「販売名のみ」検索だが、0 件のときは同一クエリで「一般名及び販売名」に一度だけフォールバックする
+    （環境変数 ``PMDA_SEARCH_NO_RADIO_FALLBACK=1`` で無効化）。
+    """
+    q = (query or "").strip()
+    if not q:
+        return []
+    if os.environ.get("PMDA_SEARCH_DISABLED", "").strip() in ("1", "true", "yes"):
+        return []
+
+    if len(q) > _MAX_NAME_LEN:
+        q = q[:_MAX_NAME_LEN]
+
+    name_radio = os.environ.get("PMDA_SEARCH_NAME_RADIO", "3").strip() or "3"
+    if name_radio not in ("1", "2", "3"):
+        name_radio = "3"
+    match_radio = os.environ.get("PMDA_SEARCH_MATCH_RADIO", "1").strip() or "1"
+    if match_radio not in ("1", "2"):
+        match_radio = "1"
+    list_rows = os.environ.get("PMDA_SEARCH_LIST_ROWS", "50").strip() or "50"
+    if list_rows not in ("10", "20", "30", "50", "100"):
+        list_rows = "50"
+
+    _throttle()
+    found = _one_search(q, timeout, name_radio, match_radio, list_rows)
+    if found:
+        return found
+    no_fb = os.environ.get("PMDA_SEARCH_NO_RADIO_FALLBACK", "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+    )
+    if name_radio == "3" and not no_fb:
+        _throttle()
+        return _one_search(q, timeout, "1", match_radio, list_rows)
+    return []
