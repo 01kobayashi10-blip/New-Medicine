@@ -14,6 +14,11 @@ on:
     # 毎日 00:15 UTC（日本時間 09:15 前後。DST で変動）
     - cron: "15 0 * * *"
   workflow_dispatch:
+    inputs:
+      queue_infographic_without_new:
+        description: "新規0件でもRSSの「発売」先頭1件で図解HTMLを試行する（既定オン）"
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -47,6 +52,8 @@ jobs:
           RSS_URL: https://www.mixonline.jp/DesktopModules/MixOnline_Rss/MixOnlinerss.aspx?rssmode=3
           # メール/Slack に載せる「発売」記事の直近件数（既定 5）
           EMAIL_TOP_N: "5"
+          # 手動実行時: 新規0でも先頭1件を図解キューへ（スケジュールでは常に false 扱い）
+          DISPATCH_QUEUE_INFOGRAPHIC_WITHOUT_NEW: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.queue_infographic_without_new || false }}
 
       - name: Validate PMDA JSON
         if: success()

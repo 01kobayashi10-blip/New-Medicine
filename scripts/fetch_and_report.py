@@ -137,6 +137,14 @@ def append_github_output(**pairs: str) -> None:
             f.write(f"{k}={v}\n")
 
 
+def _dispatch_queue_infographic_without_new() -> bool:
+    """GitHub Actions の手動実行で、新規0件でも図解用キューに先頭記事を載せるか。"""
+    if os.environ.get("GITHUB_EVENT_NAME", "").strip() != "workflow_dispatch":
+        return False
+    v = os.environ.get("DISPATCH_QUEUE_INFOGRAPHIC_WITHOUT_NEW", "true").strip().lower()
+    return v in ("true", "1", "yes", "")
+
+
 def write_generate_queue(new_entries: list[feedparser.FeedParserDict]) -> None:
     """図解生成用: 本実行で新規の RSS のみ書く。新規なしのときはファイルを消してコミットノイズを防ぐ。"""
     if not new_entries:
@@ -261,7 +269,13 @@ def main() -> int:
     with open(REPORT_PATH, "w", encoding="utf-8") as f:
         f.write(build_html(rows, new_count, meta_line))
 
-    write_generate_queue(new_entries)
+    queue_for_generate = new_entries
+    if not new_entries and _dispatch_queue_infographic_without_new() and matched:
+        queue_for_generate = matched[:1]
+        print(
+            "workflow_dispatch: RSS 上の発売記事の先頭1件を図解キューに載せます（新規0件・processed は更新しません）。"
+        )
+    write_generate_queue(queue_for_generate)
 
     if new_count:
         print(f"Wrote {REPORT_PATH.relative_to(ROOT)} and updated state ({new_count} new).")
