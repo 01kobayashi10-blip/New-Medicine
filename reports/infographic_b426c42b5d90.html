@@ -4,63 +4,192 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ファイザー　HER2陽性乳がん治療薬・ツカイザ錠を発売 — 図解（v1）</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: { dark: '#0c4a6e', mid: '#0369a1', light: '#e0f2fe' }
-          },
-          fontFamily: {
-            sans: ['"Hiragino Sans"', '"Hiragino Kaku Gothic ProN"', 'Meiryo', 'sans-serif']
-          }
-        }
-      }
-    };
-  </script>
+  
   <style>
+    :root {
+      --brand-dark: #0c4a6e;
+      --brand-mid: #0369a1;
+      --brand-light: #e0f2fe;
+      --slate-50: #f8fafc;
+      --slate-200: #e2e8f0;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-800: #1e293b;
+      --amber-50: #fffbeb;
+      --amber-200: #fde68a;
+      --amber-950: #451a03;
+      --sky-100: #e0f2fe;
+      --sky-200: #bae6fd;
+      --white: #fff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, system-ui, sans-serif;
+      background: var(--slate-50);
+      color: var(--slate-800);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--brand-mid); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--brand-dark); }
+
+    .page-header {
+      background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand-mid) 45%, #0284c7 100%);
+      color: var(--white);
+      padding: 2.25rem 1rem 2.5rem;
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.08);
+    }
+    .page-header-inner {
+      max-width: 56rem;
+      margin: 0 auto;
+      padding: 0 0.5rem;
+    }
+    .page-header-kicker {
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgb(224 242 254 / 0.92);
+      margin: 0;
+    }
+    .page-header h1 {
+      margin: 0.5rem 0 0;
+      font-size: clamp(1.35rem, 2.8vw, 1.85rem);
+      font-weight: 700;
+      line-height: 1.25;
+      word-break: break-word;
+    }
+    .page-header-sub {
+      margin: 0.75rem 0 0;
+      max-width: 42rem;
+      font-size: 0.95rem;
+      color: rgb(224 242 254 / 0.95);
+    }
+
+    .page-main {
+      max-width: 56rem;
+      margin: 0 auto;
+      padding: 2.25rem 1rem 3rem;
+    }
+
+    .disclaimer {
+      margin: 0 0 1.75rem;
+      padding: 0.85rem 1rem;
+      font-size: 0.875rem;
+      line-height: 1.65;
+      color: var(--amber-950);
+      background: var(--amber-50);
+      border: 1px solid var(--amber-200);
+      border-radius: 0.5rem;
+    }
+
+    .meta-panel {
+      margin-bottom: 2.25rem;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      line-height: 1.65;
+      color: var(--slate-600);
+      background: rgb(255 255 255 / 0.95);
+      border: 1px solid var(--slate-200);
+      border-radius: 0.75rem;
+      box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+    }
+    .meta-panel p { margin: 0.2rem 0; }
+    .meta-label { font-weight: 600; color: var(--slate-500); margin-right: 0.35rem; }
+    .meta-panel code {
+      font-size: 0.68rem;
+      padding: 0.1rem 0.35rem;
+      border-radius: 0.25rem;
+      background: #f1f5f9;
+    }
+
+    .section-block { margin-bottom: 2.75rem; }
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0 0 1rem;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--brand-dark);
+    }
+    .badge {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2rem;
+      height: 2rem;
+      padding: 0 0.35rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--white);
+      background: var(--brand-mid);
+      border-radius: 0.5rem;
+    }
+    .card {
+      background: var(--white);
+      border: 1px solid var(--slate-200);
+      border-radius: 1rem;
+      padding: 1.15rem 1.25rem;
+      box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+    }
+    .card-body {
+      margin: 0;
+      font-size: 0.875rem;
+      line-height: 1.65;
+      color: var(--slate-800);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .footer-note {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--slate-200);
+      font-size: 0.7rem;
+      line-height: 1.65;
+      color: var(--slate-500);
+    }
+
     @media print {
-      .no-print { display: none !important; }
       body { background: #fff !important; }
-      .shadow-lg, .shadow-md, .shadow-sm { box-shadow: none !important; }
+      .card { box-shadow: none !important; }
     }
   </style>
 </head>
-<body class="min-h-screen bg-slate-50 text-slate-800 antialiased">
-  <header class="relative bg-gradient-to-br from-brand-dark via-brand-mid to-sky-600 text-white shadow-lg">
-    <div class="mx-auto max-w-5xl px-4 py-10 pb-10 pt-10 sm:px-6">
-      <div class="max-w-4xl">
-        <p class="text-sm font-medium uppercase tracking-widest text-sky-200/90">ミクス発売記事ベース・PMDA添付文書抜粋（自動生成）</p>
-        <h1 class="mt-2 text-2xl font-bold tracking-tight break-words sm:text-3xl">ファイザー　HER2陽性乳がん治療薬・ツカイザ錠を発売</h1>
-        <p class="mt-3 max-w-3xl text-base text-sky-100">効能（4）・薬効薬理（18）・臨床成績（17）・副作用（11）・用法・相互作用（6・7・10）</p>
-      </div>
+<body>
+  <header class="page-header">
+    <div class="page-header-inner">
+      <p class="page-header-kicker">ミクス発売記事ベース・PMDA添付文書抜粋（自動生成）</p>
+      <h1>ファイザー　HER2陽性乳がん治療薬・ツカイザ錠を発売</h1>
+      <p class="page-header-sub">効能（4）・薬効薬理（18）・臨床成績（17）・副作用（11）・用法・相互作用（6・7・10）</p>
     </div>
   </header>
 
-  <main class="mx-auto max-w-5xl px-4 py-10 sm:px-6">
-    <p class="mb-8 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-950">
-      候補 1 件・強一致。添付文書 PDF から章を自動抜粋しました（文字数上限あり）。診療・服薬の判断は必ず最新の添付文書および医療者の指示に従ってください。
-    </p>
+  <main class="page-main">
+    <p class="disclaimer">候補 1 件・強一致。添付文書 PDF から章を自動抜粋しました（文字数上限あり）。診療・服薬の判断は必ず最新の添付文書および医療者の指示に従ってください。</p>
 
-    <div class="mb-10 rounded-xl border border-slate-200 bg-white/90 px-4 py-3 text-xs leading-relaxed text-slate-600 shadow-sm">
-      <p><span class="font-semibold text-slate-500">生成</span> 2026-04-28T10:41:30Z / <span class="font-semibold text-slate-500">stable_id</span> <code class="rounded bg-slate-100 px-1 py-0.5 text-[11px]">https://www.mixonline.jp/tabid55.html?artid=80111</code></p>
-      <p class="mt-1"><span class="font-semibold text-slate-500">ミクス</span> <a class="font-medium text-sky-800 underline decoration-sky-600 underline-offset-2 hover:text-sky-950" href="https://www.mixonline.jp/tabid55.html?artid=80111" rel="noopener noreferrer">https://www.mixonline.jp/tabid55.html?artid=80111</a></p>
+    <div class="meta-panel">
+      <p><span class="meta-label">生成</span>2026-04-28T10:49:37Z / <span class="meta-label">stable_id</span> <code>https://www.mixonline.jp/tabid55.html?artid=80111</code></p>
+      <p><span class="meta-label">ミクス</span><a href="https://www.mixonline.jp/tabid55.html?artid=80111" rel="noopener noreferrer">https://www.mixonline.jp/tabid55.html?artid=80111</a></p>
       
-      <p class="mt-1"><span class="font-semibold text-slate-500">PMDA</span> <a class="font-medium text-sky-800 underline decoration-sky-600 underline-offset-2 hover:text-sky-950" href="https://www.pmda.go.jp/PmdaSearch/iyakuDetail/GeneralList/4291098" rel="noopener noreferrer">https://www.pmda.go.jp/PmdaSearch/iyakuDetail/GeneralList/4291098</a></p>
+      <p><span class="meta-label">PMDA</span><a href="https://www.pmda.go.jp/PmdaSearch/iyakuDetail/GeneralList/4291098" rel="noopener noreferrer">https://www.pmda.go.jp/PmdaSearch/iyakuDetail/GeneralList/4291098</a></p>
       
       
-      <p class="mt-1"><span class="font-semibold text-slate-500">添付文書 PDF</span> <a class="font-medium text-sky-800 underline decoration-sky-600 underline-offset-2 hover:text-sky-950" href="https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetPDF/672212_4291098F1029_1_01" rel="noopener noreferrer">https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetPDF/672212_4291098F1029_1_01</a></p>
+      <p><span class="meta-label">添付文書 PDF</span><a href="https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetPDF/672212_4291098F1029_1_01" rel="noopener noreferrer">https://www.pmda.go.jp/PmdaSearch/iyakuDetail/ResultDataSetPDF/672212_4291098F1029_1_01</a></p>
       
     </div>
 
-    <section class="mb-12">
-      <h2 class="mb-4 flex items-center gap-2 text-xl font-bold text-brand-dark">
-        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-mid text-sm text-white">1</span>
+    <section class="section-block">
+      <h2 class="section-title">
+        <span class="badge">1</span>
         識別・製品情報（添付文書 章4より前）
       </h2>
-      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div class="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">1. 警告 
+      <div class="card">
+        <div class="card-body">1. 警告 
 本剤を含むがん化学療法は、 緊急時に十分対応できる医療施設に
 おいて、 がん化学療法に十分な知識・経験を持つ医師のもとで本
 療法が適切と判断される症例についてのみ実施すること。また、
@@ -126,23 +255,23 @@
       </div>
     </section>
 
-    <section class="mb-12">
-      <h2 class="mb-4 flex items-center gap-2 text-xl font-bold text-brand-dark">
-        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-mid text-sm text-white">4</span>
+    <section class="section-block">
+      <h2 class="section-title">
+        <span class="badge">4</span>
         効能又は効果
       </h2>
-      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div class="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">化学療法歴のあるHER2陽性の手術不能又は再発乳癌</div>
+      <div class="card">
+        <div class="card-body">化学療法歴のあるHER2陽性の手術不能又は再発乳癌</div>
       </div>
     </section>
 
-    <section class="mb-12">
-      <h2 class="mb-4 flex items-center gap-2 text-xl font-bold text-brand-dark">
-        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-mid text-sm text-white">18</span>
+    <section class="section-block">
+      <h2 class="section-title">
+        <span class="badge">18</span>
         薬効薬理
       </h2>
-      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div class="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">18.1 作用機序 
+      <div class="card">
+        <div class="card-body">18.1 作用機序 
 ツカチニブは、HER2のキナーゼ活性を阻害することにより、腫瘍の
 増殖を抑制すると考えられている18)。 
 18.2 抗腫瘍作用 
@@ -157,13 +286,13 @@
       </div>
     </section>
 
-    <section class="mb-12">
-      <h2 class="mb-4 flex items-center gap-2 text-xl font-bold text-brand-dark">
-        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-mid text-sm text-white">17</span>
+    <section class="section-block">
+      <h2 class="section-title">
+        <span class="badge">17</span>
         臨床成績
       </h2>
-      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div class="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">17.1 有効性及び安全性に関する試験 
+      <div class="card">
+        <div class="card-body">17.1 有効性及び安全性に関する試験 
 17.1.1 海外第II相試験[HER2CLIMB(ONT-380-206)試験] 
 周術期若しくは手術不能又は再発乳癌に対する化学療法として、タ
 キサン系抗悪性腫瘍剤注1)、トラスツズマブ、ペルツズマブ及びトラ
@@ -234,13 +363,13 @@
       </div>
     </section>
 
-    <section class="mb-12">
-      <h2 class="mb-4 flex items-center gap-2 text-xl font-bold text-brand-dark">
-        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-mid text-sm text-white">11</span>
+    <section class="section-block">
+      <h2 class="section-title">
+        <span class="badge">11</span>
         副作用
       </h2>
-      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div class="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">次の副作用があらわれることがあるので、観察を十分に行い、異常
+      <div class="card">
+        <div class="card-body">次の副作用があらわれることがあるので、観察を十分に行い、異常
 が認められた場合には投与を中止するなど適切な処置を行うこと。 
 11.1 重大な副作用 
 11.1.1 重度の下痢(10.6%) 
@@ -443,13 +572,13 @@ LDH増加、アミラーゼ増加、化膿
       </div>
     </section>
 
-    <section class="mb-12">
-      <h2 class="mb-4 flex items-center gap-2 text-xl font-bold text-brand-dark">
-        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-mid text-sm text-white">6–10</span>
+    <section class="section-block">
+      <h2 class="section-title">
+        <span class="badge">6–10</span>
         用法・用量・相互作用（メモ）
       </h2>
-      <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div class="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">トラスツズマブ(遺伝子組換え)及びカペシタビンとの併用におい
+      <div class="card">
+        <div class="card-body">トラスツズマブ(遺伝子組換え)及びカペシタビンとの併用におい
 て、通常、成人にはツカチニブとして1回300mgを1日2回経口投与す
 る。なお、患者の状態により適宜減量する。 
  
@@ -755,7 +884,7 @@ P-gpの基質となる薬剤
       </div>
     </section>
 
-    <footer class="border-t border-slate-200 pt-8 text-xs leading-relaxed text-slate-500">
+    <footer class="footer-note">
       出典: PMDA 公開の添付文書（抜粋・自動生成）。診療・服薬は医師・薬剤師の指示および最新の添付文書に従ってください。KEGG 等の二次出典は v1 では用いていません。
     </footer>
   </main>
