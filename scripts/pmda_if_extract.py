@@ -290,6 +290,7 @@ def _strip_redundant_heading_line(body: str, line_pat: re.Pattern) -> str:
 def split_if_sections(text: str, max_len: int) -> dict[str, str]:
     t = normalize_if_headings(normalize_if_text(text))
     # 新記載要領: 「4. 効能又は効果」… 行頭想定
+    p3 = re.compile(r"(?m)^\s*3[\.．]\s*組成・性状")
     p4 = re.compile(r"(?m)^\s*4[\.．]\s*効能又は効果")
     p5 = re.compile(r"(?m)^\s*5[\.．]\s*効能又は効果に関連する注意")
     p6 = re.compile(r"(?m)^\s*6[\.．]\s*用法及び用量")
@@ -300,6 +301,8 @@ def split_if_sections(text: str, max_len: int) -> dict[str, str]:
     p18 = re.compile(r"(?m)^\s*18[\.．]\s*薬効薬理")
     p19 = re.compile(r"(?m)^\s*19[\.．]\s*有効成分に関する理化学的知見")
 
+    sec3 = _slice_between(t, p3, p4)
+    sec3 = _strip_redundant_heading_line(sec3, re.compile(r"^\s*3[\.．]\s*組成・性状\s*$"))
     sec4 = _slice_between(t, p4, p5)
     sec4 = _strip_redundant_heading_line(sec4, re.compile(r"^\s*4[\.．]\s*効能又は効果\s*$"))
     sec17 = _slice_between(t, p17, p18)
@@ -330,11 +333,100 @@ def split_if_sections(text: str, max_len: int) -> dict[str, str]:
 
     return {
         "section_ident": clip(ident, limit=max_len * 2),
+        "section_3": clip(sec3, limit=max_len),
         "section_4": clip(sec4),
         "section_17": clip(sec17),
         "section_18": clip(sec18),
         "section_11": clip(sec11),
         "section_6710": clip(sec6710),
+    }
+
+
+def _brand_from_rss_title(title: str) -> str:
+    q3 = query_builder.query_pass3_middle_dot(title)
+    if q3 and q3.strip():
+        return q3.strip()[:120]
+    q1 = query_builder.query_pass1(title)
+    if "・" in q1:
+        tail = q1.rsplit("・", 1)[-1].strip()
+        if tail:
+            return tail[:120]
+    return (q1 or "")[:120]
+
+
+def _generic_from_section3(sec3: str) -> str:
+    s = _nfkc(sec3 or "")
+    if not s:
+        return ""
+    for pat in (
+        r"有効成分[（(]([^）)]+)[）)]",
+        r"本剤の有効成分は[、,]?\s*([^\s\n。]+(?:\s+[^\s\n。]+){0,6})",
+        r"本剤1[^\n]*\n\s*([^\n]+(?:水和物|塩酸塩|エタノール付加物|付加物)[^\n]*)",
+    ):
+        m = re.search(pat, s)
+        if m:
+            g = m.group(1).strip()
+            if 2 <= len(g) <= 90:
+                return g
+    lines = [ln.strip() for ln in s.split("\n") if ln.strip()]
+    for ln in lines:
+        if re.match(r"^3[\.．]1", ln):
+            continue
+        if any(x in ln for x in ("添加剤", "製剤の性状", "性状", "3.2")):
+            break
+        if 6 <= len(ln) <= 85 and re.search(r"(水和物|塩酸塩|塩|付加物|錠|注射液)", ln):
+            if not re.match(r"^3[\.．]", ln):
+                return ln[:90]
+    return ""
+
+
+def _efficacy_one_liner(sec4: str, max_chars: int = 200) -> str:
+    s = (sec4 or "").strip()
+    if not s:
+        return ""
+    parts: list[str] = []
+    n = 0
+    for chunk in re.split(r"(?<=[。．])", s):
+        if not chunk.strip():
+            continue
+        parts.append(chunk.strip())
+        n += len(chunk)
+        if n >= 100 or len(parts) >= 2:
+            break
+    line = "".join(parts)
+    line = re.sub(r"[ \t]+", " ", line).strip()
+    if len(line) > max_chars:
+        line = line[: max_chars - 1].rstrip() + "…"
+    return line
+
+
+def _yakka_bunrui(ident: str, sec3: str, sec4: str) -> str:
+    for block in (ident, sec3, sec4):
+        if not block:
+            continue
+        m = re.search(r"薬効分類[：:\s]*([^\n]+)", block)
+        if m:
+            return m.group(1).strip()[:120]
+    return ""
+
+
+def summarize_infographic_cards(*, rss_title: str, sections: dict[str, str]) -> dict[str, str]:
+    """見本 HTML の上段3カードに近い短文（ルールベース。LLM 不使用）。"""
+    ident = sections.get("section_ident") or ""
+    sec3 = sections.get("section_3") or ""
+    sec4 = sections.get("section_4") or ""
+    brand = _brand_from_rss_title(rss_title)
+    generic = _generic_from_section3(sec3)
+    yakka = _yakka_bunrui(ident, sec3, sec4)
+    eff = _efficacy_one_liner(sec4)
+    preview_lim = 1600
+    ident_preview = ident if len(ident) <= preview_lim else ident[: preview_lim - 1].rstrip() + "…"
+    return {
+        "card_brand": brand,
+        "card_generic": generic,
+        "card_yakka": yakka,
+        "card_efficacy": eff,
+        "ident_preview": ident_preview,
     }
 
 

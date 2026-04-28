@@ -55,6 +55,27 @@ class TestExtractPdfPairs(unittest.TestCase):
         self.assertTrue(url.startswith("https://www.pmda.go.jp/"))
 
 
+class TestSummarizeCards(unittest.TestCase):
+    def test_cards_from_title_and_sections(self) -> None:
+        sec = {
+            "section_ident": "薬効分類：抗悪性腫瘍剤\nその他",
+            "section_3": "3.1 組成\n有効成分（ツカチニブエタノール付加物）\n",
+            "section_4": "化学療法歴のあるHER2陽性の手術不能又は再発乳癌における効果。詳細は併用参照。",
+            "section_17": "",
+            "section_18": "",
+            "section_11": "",
+            "section_6710": "",
+        }
+        r = pmda_if_extract.summarize_infographic_cards(
+            rss_title="ファイザー　HER2陽性乳がん治療薬・ツカイザ錠を発売",
+            sections=sec,
+        )
+        self.assertIn("ツカイザ", r["card_brand"])
+        self.assertIn("ツカチニブ", r["card_generic"])
+        self.assertIn("抗悪性", r["card_yakka"])
+        self.assertIn("乳癌", r["card_efficacy"])
+
+
 class TestSplitIfSections(unittest.TestCase):
     def test_strips_leading_page_noise_before_ident(self) -> None:
         text = """
@@ -73,6 +94,20 @@ class TestSplitIfSections(unittest.TestCase):
         d = pmda_if_extract.split_if_sections(text, max_len=5000)
         self.assertNotIn("002", d["section_ident"])
         self.assertIn("1. 警告", d["section_ident"])
+
+    def test_section_3_extracted(self) -> None:
+        text = """
+3. 組成・性状
+3.1 組成
+有効成分（テスト成分水和物）
+
+4. 効能又は効果
+効能
+
+5. 効能又は効果に関連する注意
+"""
+        d = pmda_if_extract.split_if_sections(text, max_len=5000)
+        self.assertIn("テスト成分", d.get("section_3", ""))
 
     def test_basic_headings(self) -> None:
         text = """

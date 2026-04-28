@@ -86,6 +86,11 @@ def render_html(
     section_17: str = "",
     section_11: str = "",
     section_6710: str = "",
+    card_brand: str = "",
+    card_generic: str = "",
+    card_yakka: str = "",
+    card_efficacy: str = "",
+    ident_preview: str = "",
 ) -> str:
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATE_DIR)),
@@ -106,18 +111,28 @@ def render_html(
         section_17=section_17,
         section_11=section_11,
         section_6710=section_6710,
+        card_brand=card_brand,
+        card_generic=card_generic,
+        card_yakka=card_yakka,
+        card_efficacy=card_efficacy,
+        ident_preview=ident_preview,
     )
 
 
 def _empty_sections() -> dict[str, str]:
     return {
         "section_ident": "",
+        "section_3": "",
         "section_4": "",
         "section_17": "",
         "section_18": "",
         "section_11": "",
         "section_6710": "",
     }
+
+
+def _cards_for_title(title: str, sec: dict[str, str]) -> dict[str, str]:
+    return pmda_if_extract.summarize_infographic_cards(rss_title=title, sections=sec)
 
 
 def _http_timeout() -> int:
@@ -180,6 +195,7 @@ def process_item(item: dict, overrides: dict) -> tuple[str | None, str]:
                 "override により PMDA URL が指定されています。この URL は GeneralList 以外のため、"
                 "v1 では添付文書の自動抜粋を行っていません（GeneralList の URL を指定すると抜粋されます）。"
             )
+        cards = _cards_for_title(title, sec)
         html = render_html(
             title_display=title[:200] + ("…" if len(title) > 200 else ""),
             stable_id=sid,
@@ -193,6 +209,11 @@ def process_item(item: dict, overrides: dict) -> tuple[str | None, str]:
             section_18=sec["section_18"],
             section_11=sec["section_11"],
             section_6710=sec["section_6710"],
+            card_brand=cards["card_brand"],
+            card_generic=cards["card_generic"],
+            card_yakka=cards["card_yakka"],
+            card_efficacy=cards["card_efficacy"],
+            ident_preview=cards["ident_preview"],
         )
         out_path.write_text(html, encoding="utf-8")
         return f"reports/{out_name}", "override_if" if src_pdf else "override"
@@ -254,6 +275,7 @@ def process_item(item: dict, overrides: dict) -> tuple[str | None, str]:
     elif len(candidates) == 1:
         disc = "候補 1 件ですが強一致条件を満たさないため、PMDA URL は未設定です。override または検索クエリの調整が必要です。"
 
+    cards = _cards_for_title(title, sec)
     html = render_html(
         title_display=title[:200] + ("…" if len(title) > 200 else ""),
         stable_id=sid,
@@ -267,6 +289,11 @@ def process_item(item: dict, overrides: dict) -> tuple[str | None, str]:
         section_18=sec["section_18"],
         section_11=sec["section_11"],
         section_6710=sec["section_6710"],
+        card_brand=cards["card_brand"],
+        card_generic=cards["card_generic"],
+        card_yakka=cards["card_yakka"],
+        card_efficacy=cards["card_efficacy"],
+        ident_preview=cards["ident_preview"],
     )
     REPORTS.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding="utf-8")
