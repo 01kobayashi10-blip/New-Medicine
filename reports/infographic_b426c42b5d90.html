@@ -145,6 +145,71 @@
       word-break: break-word;
     }
 
+    .card-grid {
+      display: grid;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    @media (min-width: 900px) {
+      .card-grid { grid-template-columns: 1fr 1fr 1.08fr; }
+    }
+    .d-card {
+      background: var(--white);
+      border: 1px solid var(--slate-200);
+      border-radius: 1rem;
+      padding: 1.1rem 1.2rem;
+      box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+    }
+    .d-card--accent {
+      border-width: 2px;
+      border-color: #7dd3fc;
+      background: linear-gradient(145deg, #f0f9ff 0%, #fff 55%, #e0f2fe 100%);
+      box-shadow: 0 2px 8px rgb(3 105 161 / 0.08);
+    }
+    .d-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--slate-500);
+      margin: 0 0 0.35rem;
+    }
+    .d-value {
+      margin: 0;
+      font-size: 1.35rem;
+      font-weight: 700;
+      line-height: 1.3;
+      color: var(--brand-dark);
+      word-break: break-word;
+    }
+    .d-value--sm { font-size: 1.05rem; }
+    .d-note {
+      margin: 0.5rem 0 0;
+      font-size: 0.78rem;
+      color: var(--slate-600);
+      line-height: 1.5;
+    }
+    .d-divider {
+      margin: 0.85rem 0 0;
+      padding-top: 0.85rem;
+      border-top: 1px solid rgb(186 230 253 / 0.85);
+    }
+    .subhead-hint {
+      margin: 0.35rem 0 0.85rem;
+      font-size: 0.8rem;
+      color: var(--slate-500);
+      line-height: 1.55;
+    }
+    .subsection-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 1.35rem 0 0.75rem;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--brand-dark);
+    }
+
     .footer-note {
       margin-top: 2rem;
       padding-top: 1.5rem;
@@ -156,7 +221,7 @@
 
     @media print {
       body { background: #fff !important; }
-      .card { box-shadow: none !important; }
+      .card, .d-card { box-shadow: none !important; }
     }
   </style>
 </head>
@@ -173,7 +238,7 @@
     <p class="disclaimer">候補 1 件・強一致。添付文書 PDF から章を自動抜粋しました（文字数上限あり）。診療・服薬の判断は必ず最新の添付文書および医療者の指示に従ってください。</p>
 
     <div class="meta-panel">
-      <p><span class="meta-label">生成</span>2026-04-28T10:49:37Z / <span class="meta-label">stable_id</span> <code>https://www.mixonline.jp/tabid55.html?artid=80111</code></p>
+      <p><span class="meta-label">生成</span>2026-04-28T11:05:54Z / <span class="meta-label">stable_id</span> <code>https://www.mixonline.jp/tabid55.html?artid=80111</code></p>
       <p><span class="meta-label">ミクス</span><a href="https://www.mixonline.jp/tabid55.html?artid=80111" rel="noopener noreferrer">https://www.mixonline.jp/tabid55.html?artid=80111</a></p>
       
       <p><span class="meta-label">PMDA</span><a href="https://www.pmda.go.jp/PmdaSearch/iyakuDetail/GeneralList/4291098" rel="noopener noreferrer">https://www.pmda.go.jp/PmdaSearch/iyakuDetail/GeneralList/4291098</a></p>
@@ -186,8 +251,37 @@
     <section class="section-block">
       <h2 class="section-title">
         <span class="badge">1</span>
-        識別・製品情報（添付文書 章4より前）
+        製品名・一般名・効能（自動要約）
       </h2>
+      <p class="subhead-hint">見本レイアウトに近づけるため、ミクス見出しと添付文書（3章・4章）から短文を組み立てています。最終確認は必ず添付文書 PDF で行ってください。</p>
+      
+      <div class="card-grid">
+        <div class="d-card">
+          <p class="d-label">販売名（目安）</p>
+          
+          <p class="d-value">ツカイザ錠</p>
+          <p class="d-note">RSS 見出しの「・」以降などから推定した表記です。</p>
+          
+        </div>
+        <div class="d-card">
+          <p class="d-label">一般名（有効成分・要約）</p>
+          
+          <p class="d-value d-value--sm">（3. 組成からの自動抽出なし）</p>
+          
+        </div>
+        <div class="d-card d-card--accent">
+          
+          
+          <div class="">
+            <p class="d-label">効能又は効果（抜粋）</p>
+            <p class="d-value d-value--sm">化学療法歴のあるHER2陽性の手術不能又は再発乳癌</p>
+          </div>
+          
+          
+        </div>
+      </div>
+      
+      <h3 class="subsection-title">添付文書より（警告・禁忌・識別の抜粋）</h3>
       <div class="card">
         <div class="card-body">1. 警告 
 本剤を含むがん化学療法は、 緊急時に十分対応できる医療施設に
