@@ -56,8 +56,26 @@ class TestExtractPdfPairs(unittest.TestCase):
 
 
 class TestSummarizeCards(unittest.TestCase):
+    def test_generic_from_prech4_ki_line(self) -> None:
+        sec = {
+            "pre_ch4_raw": "キ. 基準名：ツカチニブエタノール付加物\nウ. 承認\n1. 警告\n注意",
+            "section_ident": "1. 警告\n注意",
+            "section_3": "",
+            "section_4": "化学療法歴のあるHER2陽性の手術不能又は再発乳癌における。",
+            "section_17": "",
+            "section_18": "",
+            "section_11": "",
+            "section_6710": "",
+        }
+        r = pmda_if_extract.summarize_infographic_cards(
+            rss_title="ファイザー　HER2陽性乳がん治療薬・ツカイザ錠を発売",
+            sections=sec,
+        )
+        self.assertIn("ツカチニブ", r["card_generic"])
+
     def test_cards_from_title_and_sections(self) -> None:
         sec = {
+            "pre_ch4_raw": "",
             "section_ident": "薬効分類：抗悪性腫瘍剤\nその他",
             "section_3": "3.1 組成\n有効成分（ツカチニブエタノール付加物）\n",
             "section_4": "化学療法歴のあるHER2陽性の手術不能又は再発乳癌における効果。詳細は併用参照。",
@@ -108,6 +126,22 @@ class TestSplitIfSections(unittest.TestCase):
 """
         d = pmda_if_extract.split_if_sections(text, max_len=5000)
         self.assertIn("テスト成分", d.get("section_3", ""))
+
+    def test_section_3_when_heading_glued_to_31(self) -> None:
+        text = """
+1. 警告
+x
+3. 組成・性状3.1 組成
+有効成分（ツカチニブエタノール付加物）
+添加剤 ダミー
+
+4. 効能又は効果
+効能本文
+
+5. 効能又は効果に関連する注意
+"""
+        d = pmda_if_extract.split_if_sections(text, max_len=5000)
+        self.assertIn("ツカチニブ", d.get("section_3", ""))
 
     def test_basic_headings(self) -> None:
         text = """

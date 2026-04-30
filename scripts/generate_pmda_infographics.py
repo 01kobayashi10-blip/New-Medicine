@@ -121,6 +121,7 @@ def render_html(
 
 def _empty_sections() -> dict[str, str]:
     return {
+        "pre_ch4_raw": "",
         "section_ident": "",
         "section_3": "",
         "section_4": "",

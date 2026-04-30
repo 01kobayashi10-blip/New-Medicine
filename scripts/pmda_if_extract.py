@@ -233,6 +233,15 @@ def normalize_if_headings(text: str) -> str:
     return "\n".join(lines)
 
 
+def _unglue_chapter_headings(t: str) -> str:
+    """PDF 由来で「3.1 組成」が前行にくっついている場合に改行を補う。"""
+    s = t or ""
+    s = re.sub(r"(組成・性状)\s*(3[\.．]1)", r"\1\n\2", s)
+    s = re.sub(r"(組成・性状)(3[\.．]1)", r"\1\n\2", s)
+    s = re.sub(r"(組成)(3[\.．]1)", r"\1\n\2", s)
+    return s
+
+
 def _slice_between(text: str, start_pat: re.Pattern, end_pat: re.Pattern | None) -> str:
     m0 = start_pat.search(text)
     if not m0:
@@ -289,8 +298,9 @@ def _strip_redundant_heading_line(body: str, line_pat: re.Pattern) -> str:
 
 def split_if_sections(text: str, max_len: int) -> dict[str, str]:
     t = normalize_if_headings(normalize_if_text(text))
+    t = _unglue_chapter_headings(t)
     # 新記載要領: 「4. 効能又は効果」… 行頭想定
-    p3 = re.compile(r"(?m)^\s*3[\.．]\s*組成・性状")
+    p3 = re.compile(r"(?m)^\s*3[\.．]\s*組成(?:・性状)?")
     p4 = re.compile(r"(?m)^\s*4[\.．]\s*効能又は効果")
     p5 = re.compile(r"(?m)^\s*5[\.．]\s*効能又は効果に関連する注意")
     p6 = re.compile(r"(?m)^\s*6[\.．]\s*用法及び用量")
@@ -302,7 +312,17 @@ def split_if_sections(text: str, max_len: int) -> dict[str, str]:
     p19 = re.compile(r"(?m)^\s*19[\.．]\s*有効成分に関する理化学的知見")
 
     sec3 = _slice_between(t, p3, p4)
-    sec3 = _strip_redundant_heading_line(sec3, re.compile(r"^\s*3[\.．]\s*組成・性状\s*$"))
+    sec3 = _strip_redundant_heading_line(sec3, re.compile(r"^\s*3[\.．]\s*組成(?:・性状)?\s*$"))
+    if not (sec3 or "").strip():
+        m4a = p4.search(t)
+        if m4a:
+            prefix = t[: m4a.start()]
+            m3f = re.compile(r"3[\.．]\s*組成(?:・性状)?").search(prefix)
+            if m3f:
+                sec3 = prefix[m3f.start() :].strip()
+                sec3 = _strip_redundant_heading_line(
+                    sec3, re.compile(r"^\s*3[\.．]\s*組成(?:・性状)?\s*$")
+                )
     sec4 = _slice_between(t, p4, p5)
     sec4 = _strip_redundant_heading_line(sec4, re.compile(r"^\s*4[\.．]\s*効能又は効果\s*$"))
     sec17 = _slice_between(t, p17, p18)
@@ -319,7 +339,9 @@ def split_if_sections(text: str, max_len: int) -> dict[str, str]:
     sec6710 = "\n\n".join(x for x in (block6, block10) if x).strip()
 
     m4 = p4.search(t)
+    pre_ch4_raw = ""
     if m4:
+        pre_ch4_raw = t[: m4.start()].strip()
         ident = _ident_before_chapter4(t, m4.start())
     else:
         ident = ""
@@ -332,6 +354,7 @@ def split_if_sections(text: str, max_len: int) -> dict[str, str]:
         return s[:lim].rstrip() + "\n…（以下省略）"
 
     return {
+        "pre_ch4_raw": clip(pre_ch4_raw, limit=max_len * 2),
         "section_ident": clip(ident, limit=max_len * 2),
         "section_3": clip(sec3, limit=max_len),
         "section_4": clip(sec4),
@@ -354,12 +377,34 @@ def _brand_from_rss_title(title: str) -> str:
     return (q1 or "")[:120]
 
 
+def _generic_from_ident(ident: str) -> str:
+    """識別領域の「キ. 基準名」等から一般名相当を拾う（章3が空のときのフォールバック）。"""
+    s = _nfkc(ident or "")
+    if not s:
+        return ""
+    for pat in (
+        r"キ[\.．]\s*基準名[：:\s]*([^\n]+)",
+        r"基準名[：:\s]*([^\n]+)",
+        r"一般名[（(][^）)]*[）)][：:\s]*([^\n]+)",
+        r"一般名[：:\s]*([^\n]+)",
+    ):
+        m = re.search(pat, s)
+        if m:
+            line = m.group(1).strip()
+            line = re.split(r"[／/]", line)[0].strip()
+            if 2 <= len(line) <= 100:
+                return line[:100]
+    return ""
+
+
 def _generic_from_section3(sec3: str) -> str:
     s = _nfkc(sec3 or "")
     if not s:
         return ""
     for pat in (
         r"有効成分[（(]([^）)]+)[）)]",
+        r"有効成分\s*として[、,]?\s*([^\s。\n]+(?:\s+[^\s。\n]+){0,5}(?:エタノール付加物|水和物|塩酸塩|マレイン酸塩))",
+        r"有効成分[^\n]*\n\s*([^\n]+(?:エタノール付加物|水和物|塩酸塩|付加物)[^\n]*)",
         r"本剤の有効成分は[、,]?\s*([^\s\n。]+(?:\s+[^\s\n。]+){0,6})",
         r"本剤1[^\n]*\n\s*([^\n]+(?:水和物|塩酸塩|エタノール付加物|付加物)[^\n]*)",
     ):
@@ -374,7 +419,7 @@ def _generic_from_section3(sec3: str) -> str:
             continue
         if any(x in ln for x in ("添加剤", "製剤の性状", "性状", "3.2")):
             break
-        if 6 <= len(ln) <= 85 and re.search(r"(水和物|塩酸塩|塩|付加物|錠|注射液)", ln):
+        if 6 <= len(ln) <= 85 and re.search(r"(水和物|塩酸塩|塩|付加物|錠|注射液|エタノール)", ln):
             if not re.match(r"^3[\.．]", ln):
                 return ln[:90]
     return ""
@@ -413,11 +458,13 @@ def _yakka_bunrui(ident: str, sec3: str, sec4: str) -> str:
 def summarize_infographic_cards(*, rss_title: str, sections: dict[str, str]) -> dict[str, str]:
     """見本 HTML の上段3カードに近い短文（ルールベース。LLM 不使用）。"""
     ident = sections.get("section_ident") or ""
+    pre_ch4 = (sections.get("pre_ch4_raw") or "").strip()
     sec3 = sections.get("section_3") or ""
     sec4 = sections.get("section_4") or ""
     brand = _brand_from_rss_title(rss_title)
-    generic = _generic_from_section3(sec3)
-    yakka = _yakka_bunrui(ident, sec3, sec4)
+    head_for_generic = pre_ch4 or ident
+    generic = _generic_from_section3(sec3) or _generic_from_ident(head_for_generic)
+    yakka = _yakka_bunrui(pre_ch4 or ident, sec3, sec4)
     eff = _efficacy_one_liner(sec4)
     preview_lim = 1600
     ident_preview = ident if len(ident) <= preview_lim else ident[: preview_lim - 1].rstrip() + "…"
