@@ -145,6 +145,47 @@
       word-break: break-word;
     }
 
+    .dosage-memo {
+      margin: 0 0 1rem;
+      padding: 1rem 1.15rem;
+      background: rgb(248 250 252);
+      border: 1px solid var(--slate-200);
+      border-radius: 0.75rem;
+    }
+    .dosage-memo-title {
+      margin: 0 0 0.65rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--brand-dark);
+    }
+    .dosage-memo-ul {
+      margin: 0;
+      padding-left: 1.15rem;
+      font-size: 0.875rem;
+      line-height: 1.65;
+      color: var(--slate-800);
+    }
+    .dosage-memo-li { margin: 0.35rem 0; }
+    .dosage-memo-note {
+      margin: 0.65rem 0 0;
+      font-size: 0.72rem;
+      color: var(--slate-500);
+      line-height: 1.5;
+    }
+    .dosage-raw {
+      margin-top: 0.85rem;
+      border-radius: 0.5rem;
+      border: 1px dashed var(--slate-200);
+      padding: 0.35rem 0.65rem;
+      font-size: 0.78rem;
+      color: var(--slate-600);
+    }
+    .dosage-raw summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--slate-600);
+    }
+
     .card-grid {
       display: grid;
       gap: 1rem;
@@ -471,7 +512,7 @@
     <p class="disclaimer">候補 1 件・強一致。添付文書 PDF から章を自動抜粋しました（文字数上限あり）。診療・服薬の判断は必ず最新の添付文書および医療者の指示に従ってください。</p>
 
     <div class="meta-panel">
-      <p><span class="meta-label">生成</span>2026-04-30T08:30:15Z / <span class="meta-label">stable_id</span> <code>https://www.mixonline.jp/tabid55.html?artid=80111</code></p>
+      <p><span class="meta-label">生成</span>2026-04-30T11:31:48Z / <span class="meta-label">stable_id</span> <code>https://www.mixonline.jp/tabid55.html?artid=80111</code></p>
       <p><span class="meta-label">ミクス</span><a href="https://www.mixonline.jp/tabid55.html?artid=80111" rel="noopener noreferrer">https://www.mixonline.jp/tabid55.html?artid=80111</a></p>
       
       <p><span class="meta-label">PMDA</span><a href="https://www.pmda.go.jp/PmdaSearch/iyakuDetail/GeneralList/4291098" rel="noopener noreferrer">https://www.pmda.go.jp/PmdaSearch/iyakuDetail/GeneralList/4291098</a></p>
@@ -639,8 +680,27 @@
         <span class="badge">6–10</span>
         用法・用量・相互作用（メモ）
       </h2>
+      
       <div class="card">
-        <div class="card-body">トラスツズマブ(遺伝子組換え)及びカペシタビンとの併用におい
+        <div class="dosage-memo">
+          <p class="dosage-memo-title">用法・用量のメモ（概要）</p>
+          <ul class="dosage-memo-ul">
+            
+            <li class="dosage-memo-li">重度の肝機能障害（Child-Pugh 分類 C）では開始用量 1 回 200mg を 1 日 2 回（「7.2」）。</li>
+            
+            <li class="dosage-memo-li">強い CYP2C8 阻害剤併用時は開始用量 1 回 100mg を 1 日 2 回（「7.4」）。</li>
+            
+            <li class="dosage-memo-li">本剤単独投与での有効性及び安全性は確立していない。（「7.1」） カペシタビン用量は添付文書「7.5」に表あり（「7.5」）。</li>
+            
+          </ul>
+          
+          <p class="dosage-memo-note">添付文書「6」「7」「10」より自動要約（詳細は抜粋全文を参照）。</p>
+          
+        </div>
+        
+        <details class="dosage-raw">
+          <summary>章6・7・10の抜粋全文を表示</summary>
+          <div class="card-body" style="margin-top: 0.65rem;">トラスツズマブ(遺伝子組換え)及びカペシタビンとの併用におい
 て、通常、成人にはツカチニブとして1回300mgを1日2回経口投与す
 る。なお、患者の状態により適宜減量する。 
  
@@ -943,7 +1003,10 @@ P-gpの基質となる薬剤
 とにより、これらの薬剤
 の血中濃度が上昇する可
 能性がある。</div>
+        </details>
+        
       </div>
+      
     </section>
 
     <footer class="footer-note">
