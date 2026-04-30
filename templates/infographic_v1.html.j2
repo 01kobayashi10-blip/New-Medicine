@@ -514,7 +514,6 @@
         <span class="badge">1</span>
         製品名・一般名・効能（自動要約）
       </h2>
-      <p class="subhead-hint">見本レイアウトに近づけるため、ミクス見出しと添付文書（3章・4章）から短文を組み立てています。最終確認は必ず添付文書 PDF で行ってください。</p>
       {% if card_brand or card_generic or card_yakka or card_efficacy %}
       <div class="card-grid">
         <div class="d-card">
@@ -559,12 +558,10 @@
     <section class="section-block">
       <h2 class="section-title">
         <span class="badge">2</span>
-        薬効薬理
+        作用機序
       </h2>
       {% if pharma18 %}
-      <p class="subhead-hint">18.1 作用機序（メインの作用）のみを表示しています。試験データ等の詳細は添付文書 PDF を参照してください。</p>
       <div class="moa-wrap">
-        <p class="moa-lead-label">18.1 作用機序</p>
         <p class="moa-intro">{{ pharma18.intro }}</p>
         <p class="moa-source">出典：添付文書「18. 薬効薬理」</p>
       </div>
