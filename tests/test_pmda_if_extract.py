@@ -148,6 +148,31 @@ class TestStructureSection17(unittest.TestCase):
         self.assertEqual("奏効率", t1.get("primary_endpoint_label", ""))
         self.assertTrue(t0.get("population_lead"))
         self.assertIn("612", t0.get("population_lead", ""))
+        rc0 = t0.get("result_compare")
+        self.assertIsNotNone(rc0)
+        assert rc0 is not None
+        self.assertEqual(rc0.get("variant"), "pfs_medians")
+        self.assertEqual(rc0.get("b1", {}).get("value"), "7.8")
+        self.assertEqual(rc0.get("b2", {}).get("value"), "5.6")
+        rc1 = t1.get("result_compare")
+        self.assertIsNotNone(rc1)
+        assert rc1 is not None
+        self.assertEqual(rc1.get("variant"), "orr_pct")
+        self.assertEqual(rc1.get("b1", {}).get("value"), "35.4")
+
+    def test_result_compare_three_pfs_full_tail(self) -> None:
+        r = (
+            "主要評価項目である無増悪生存期間の中央値は本剤群で7.8ヵ月、対照群で5.6ヵ月であり、"
+            "ハザード比は0.54(95%信頼区間:0.42,0.71、層別ログランク検定p<0.00001、有意水準（両側)0.05)で、"
+            "本剤群で統計学的に有意な延長が認められた。"
+        )
+        cmp = pmda_if_extract._result_compare_three_from_sec17(r)
+        self.assertIsNotNone(cmp)
+        assert cmp is not None
+        lines = cmp["b3"]["lines"]
+        self.assertTrue(any("ハザード比" in x for x in lines))
+        self.assertTrue(any("CI" in x for x in lines))
+        self.assertTrue(any("p" in x.lower() for x in lines))
 
     def test_lead_and_bullets_from_paragraph(self) -> None:
         a, b = pmda_if_extract._lead_and_bullets_from_paragraph(

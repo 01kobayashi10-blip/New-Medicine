@@ -977,6 +977,99 @@ def _efficacy_fragments_from_sec17(result: str) -> list[dict[str, Any]]:
     return [{"t": _clip_moa_body(s, 900), "em": False}]
 
 
+def _result_compare_three_from_sec17(result: str) -> dict[str, Any] | None:
+    """
+    主要評価の結果を「比較3ブロック」用データに変換（PFS中央値比較・奏効率＋CI 等）。
+    該当パターンが無ければ None。
+    """
+    s = (result or "").strip()
+    if not s:
+        return None
+
+    m_pfs = re.search(
+        r"(主要評価項目である.*?)(本剤群で|本剤群)([\d.]+)\s*ヵ?\s*月\s*([、,])\s*"
+        r"(対照群で|対照群)([\d.]+)\s*ヵ?\s*月\s*(であった|となった|であり、|等)",
+        s,
+    )
+    if m_pfs:
+        intro = _clip_moa_body(re.sub(r"\s+", " ", m_pfs.group(1).strip()), 200)
+        tail = s[m_pfs.end() :].lstrip()
+        if tail.startswith("。"):
+            tail = tail[1:].lstrip()
+        stat_lines: list[str] = []
+        m_hr = re.search(
+            r"ハザード比[はが]?\s*([\d.]+)\s*（\s*95\s*％\s*信頼区間[^（]*（\s*([\d.]+)\s*[,，、～〜\-]+\s*([\d.]+)\s*）\s*）",
+            tail,
+        )
+        if not m_hr:
+            m_hr = re.search(
+                r"ハザード比[はが]?\s*([\d.]+)\s*[（(]\s*95\s*%[^）)]*信頼区間[^）)]*[（(]\s*([\d.]+)\s*[,，、～〜\-]+\s*([\d.]+)\s*[）)]",
+                tail,
+            )
+        if not m_hr:
+            m_hr = re.search(
+                r"ハザード比[はが]?\s*([\d.]+)\s*[（(]\s*95\s*[%％]\s*信頼区間\s*[:：]\s*"
+                r"([\d.]+)\s*[,，、]\s*([\d.]+)\s*(?:[）)]|[、,])",
+                tail,
+            )
+        if m_hr:
+            stat_lines.append(f"ハザード比 {m_hr.group(1)}")
+            stat_lines.append(f"95% CI {m_hr.group(2)}–{m_hr.group(3)}")
+            tail = tail[m_hr.end() :]
+        m_p = re.search(
+            r"(?:層別ログランク検定\s*)?p\s*[<＜]\s*([\d.]+)|p\s*値\s*は\s*([\d.]+)\s*未満",
+            tail,
+        )
+        if m_p:
+            pv = m_p.group(1) or m_p.group(2)
+            if m_p.group(1):
+                stat_lines.append(f"p < {pv}")
+            else:
+                stat_lines.append(f"p値 < {pv}")
+        return {
+            "variant": "pfs_medians",
+            "intro": intro or None,
+            "b1": {"title": "本剤群", "subtitle": "中央値", "value": m_pfs.group(3), "unit": "ヵ月"},
+            "b2": {"title": "対照群", "subtitle": "中央値", "value": m_pfs.group(6), "unit": "ヵ月"},
+            "b3": {"title": "統計", "lines": stat_lines if stat_lines else ["（詳細は添付文書）"]},
+        }
+
+    m_orr = re.search(
+        r"(主要評価項目である.*?奏効率は)([\d.]+)\s*[%％]\s*(であった|となった|で)",
+        s,
+    )
+    if m_orr:
+        pct = m_orr.group(2)
+        tail2 = s[m_orr.end() :]
+        m_ci = re.search(
+            r"\s*（\s*(90|95)\s*[%％]\s*信頼区間[^（]*（\s*([\d.]+)\s*[,，、～〜\-]+\s*([\d.]+)\s*）\s*）",
+            tail2,
+        )
+        ci_label = "信頼区間"
+        ci_val = "—"
+        if m_ci:
+            ci_label = f"{m_ci.group(1)}% 信頼区間"
+            ci_val = f"{m_ci.group(2)}–{m_ci.group(3)}"
+        note_lines: list[str] = []
+        m_note = re.search(r"(事前規定[^。]{8,100}。?)", tail2)
+        if not m_note:
+            m_note = re.search(r"(事前規定[^。]{8,100}。?)", s)
+        if m_note:
+            note_lines.append(re.sub(r"\s+", " ", m_note.group(1).strip()))
+        if not note_lines:
+            note_lines.append("（詳細は添付文書）")
+        intro = _clip_moa_body(re.sub(r"\s+", " ", m_orr.group(1).strip()), 160)
+        return {
+            "variant": "orr_pct",
+            "intro": intro or None,
+            "b1": {"title": "奏効率", "subtitle": "主要評価", "value": pct, "unit": "%"},
+            "b2": {"title": ci_label, "subtitle": "", "value": ci_val, "unit": ""},
+            "b3": {"title": "注記", "lines": note_lines},
+        }
+
+    return None
+
+
 def _ae_items_from_sec17(ae_block: str, *, max_items: int = 8) -> list[str]:
     """副作用ブロックから「名称（x.x%）」形式を抽出。"""
     t = (ae_block or "").strip()
@@ -1280,6 +1373,7 @@ def _enrich_sec17_trial_dict(
     out["population_bullets"] = pbl
     out["protocol_lead"] = prl
     out["protocol_bullets"] = prbl
+    out["result_compare"] = _result_compare_three_from_sec17(result_full)
     return out
 
 

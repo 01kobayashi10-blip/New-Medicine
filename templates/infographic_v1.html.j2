@@ -392,6 +392,73 @@
       font-weight: 700;
       color: #5b21b6;
     }
+    .trial-result-intro {
+      margin: 0 0 0.65rem;
+      font-size: 0.76rem;
+      line-height: 1.55;
+      color: var(--slate-600);
+    }
+    .trial-result-three {
+      display: grid;
+      gap: 0.65rem;
+      margin: 0 0 0.35rem;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 48rem) {
+      .trial-result-three {
+        grid-template-columns: 1fr 1fr 1fr;
+        align-items: stretch;
+      }
+    }
+    .trial-result-block {
+      margin: 0;
+      padding: 0.75rem 0.65rem;
+      text-align: center;
+      background: linear-gradient(180deg, #faf5ff 0%, #fff 55%);
+      border: 1px solid #e9d5ff;
+      border-radius: 0.65rem;
+    }
+    .trial-result-block--stat {
+      text-align: left;
+      background: linear-gradient(180deg, #f8fafc 0%, #fff 55%);
+      border-color: var(--slate-200);
+    }
+    .trial-result-block-kicker {
+      margin: 0;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--slate-600);
+    }
+    .trial-result-block-sub {
+      margin: 0.15rem 0 0;
+      font-size: 0.68rem;
+      color: var(--slate-500);
+    }
+    .trial-result-block-num {
+      margin: 0.35rem 0 0;
+      font-size: 1.35rem;
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      color: #5b21b6;
+      font-variant-numeric: tabular-nums;
+    }
+    .trial-result-block-unit {
+      margin-left: 0.1rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #6d28d9;
+    }
+    .trial-result-block-line {
+      margin: 0.28rem 0 0;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      font-weight: 600;
+      color: var(--slate-800);
+    }
+    .trial-result-block-line:first-of-type {
+      margin-top: 0.45rem;
+    }
 
     /* 主な副作用（2カラム要約） */
     .ae2-panel-title {
@@ -646,7 +713,28 @@
               {% endif %}
             </div>
             {% endif %}
-            {% if t.efficacy_fragments and (t.efficacy_fragments | map(attribute='em') | select | list | length > 0) %}
+            {% if t.result_compare %}
+            <p class="trial-result-label">結果</p>
+            {% if t.result_compare.intro %}
+            <p class="trial-result-intro">{{ t.result_compare.intro }}</p>
+            {% endif %}
+            <div class="trial-result-three">
+              <div class="trial-result-block">
+                <p class="trial-result-block-kicker">{{ t.result_compare.b1.title }}</p>
+                {% if t.result_compare.b1.subtitle %}<p class="trial-result-block-sub">{{ t.result_compare.b1.subtitle }}</p>{% endif %}
+                <p class="trial-result-block-num">{{ t.result_compare.b1.value }}{% if t.result_compare.b1.unit %}<span class="trial-result-block-unit">{{ t.result_compare.b1.unit }}</span>{% endif %}</p>
+              </div>
+              <div class="trial-result-block">
+                <p class="trial-result-block-kicker">{{ t.result_compare.b2.title }}</p>
+                {% if t.result_compare.b2.subtitle %}<p class="trial-result-block-sub">{{ t.result_compare.b2.subtitle }}</p>{% endif %}
+                <p class="trial-result-block-num">{{ t.result_compare.b2.value }}{% if t.result_compare.b2.unit %}<span class="trial-result-block-unit">{{ t.result_compare.b2.unit }}</span>{% endif %}</p>
+              </div>
+              <div class="trial-result-block trial-result-block--stat">
+                <p class="trial-result-block-kicker">{{ t.result_compare.b3.title }}</p>
+                {% for line in t.result_compare.b3.lines %}<p class="trial-result-block-line">{{ line }}</p>{% endfor %}
+              </div>
+            </div>
+            {% elif t.efficacy_fragments and (t.efficacy_fragments | map(attribute='em') | select | list | length > 0) %}
             <p class="trial-result-label">結果</p>
             <p class="trial-result trial-result-structured">{% for f in t.efficacy_fragments %}{% if f.em %}<strong class="trial-metric">{{ f.t }}</strong>{% else %}<span class="trial-txt">{{ f.t }}</span>{% endif %}{% endfor %}</p>
             {% elif t.result %}<p class="trial-result-label">結果</p><p class="trial-result">{{ t.result }}</p>{% endif %}
