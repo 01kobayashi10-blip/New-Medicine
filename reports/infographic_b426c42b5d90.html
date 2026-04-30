@@ -392,6 +392,73 @@
       font-weight: 700;
       color: #5b21b6;
     }
+    .trial-result-intro {
+      margin: 0 0 0.65rem;
+      font-size: 0.76rem;
+      line-height: 1.55;
+      color: var(--slate-600);
+    }
+    .trial-result-three {
+      display: grid;
+      gap: 0.65rem;
+      margin: 0 0 0.35rem;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 48rem) {
+      .trial-result-three {
+        grid-template-columns: 1fr 1fr 1fr;
+        align-items: stretch;
+      }
+    }
+    .trial-result-block {
+      margin: 0;
+      padding: 0.75rem 0.65rem;
+      text-align: center;
+      background: linear-gradient(180deg, #faf5ff 0%, #fff 55%);
+      border: 1px solid #e9d5ff;
+      border-radius: 0.65rem;
+    }
+    .trial-result-block--stat {
+      text-align: left;
+      background: linear-gradient(180deg, #f8fafc 0%, #fff 55%);
+      border-color: var(--slate-200);
+    }
+    .trial-result-block-kicker {
+      margin: 0;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--slate-600);
+    }
+    .trial-result-block-sub {
+      margin: 0.15rem 0 0;
+      font-size: 0.68rem;
+      color: var(--slate-500);
+    }
+    .trial-result-block-num {
+      margin: 0.35rem 0 0;
+      font-size: 1.35rem;
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      color: #5b21b6;
+      font-variant-numeric: tabular-nums;
+    }
+    .trial-result-block-unit {
+      margin-left: 0.1rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #6d28d9;
+    }
+    .trial-result-block-line {
+      margin: 0.28rem 0 0;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      font-weight: 600;
+      color: var(--slate-800);
+    }
+    .trial-result-block-line:first-of-type {
+      margin-top: 0.45rem;
+    }
 
     /* 主な副作用（2カラム要約） */
     .ae2-panel-title {
@@ -519,7 +586,7 @@
     <p class="disclaimer">候補 1 件・強一致。添付文書 PDF から章を自動抜粋しました（文字数上限あり）。診療・服薬の判断は必ず最新の添付文書および医療者の指示に従ってください。</p>
 
     <div class="meta-panel">
-      <p><span class="meta-label">生成</span>2026-04-30T14:40:37Z / <span class="meta-label">stable_id</span> <code>https://www.mixonline.jp/tabid55.html?artid=80111</code></p>
+      <p><span class="meta-label">生成</span>2026-04-30T14:54:08Z / <span class="meta-label">stable_id</span> <code>https://www.mixonline.jp/tabid55.html?artid=80111</code></p>
       <p><span class="meta-label">ミクス</span><a href="https://www.mixonline.jp/tabid55.html?artid=80111" rel="noopener noreferrer">https://www.mixonline.jp/tabid55.html?artid=80111</a></p>
       
       <p><span class="meta-label">PMDA</span><a href="https://www.pmda.go.jp/PmdaSearch/iyakuDetail/GeneralList/4291098" rel="noopener noreferrer">https://www.pmda.go.jp/PmdaSearch/iyakuDetail/GeneralList/4291098</a></p>
@@ -617,7 +684,25 @@
             
             
             <p class="trial-result-label">結果</p>
-            <p class="trial-result trial-result-structured"><span class="trial-txt">主要評価項目である無作為に割り付けた最初の480例(本剤群320例、 対照群160例)における盲検下独立中央判定の評価に基づく無増悪生 存期間の中央値は</span><span class="trial-txt">本剤群で</span><strong class="trial-metric">7.8</strong><span class="trial-txt">ヵ月</span><span class="trial-txt">、</span><span class="trial-txt">対照群で</span><strong class="trial-metric">5.6</strong><span class="trial-txt">ヵ月</span><span class="trial-txt">であり、</span><span class="trial-txt">、</span><strong class="trial-metric">p < 0.00001</strong></p>
+            
+            <p class="trial-result-intro">主要評価項目である無作為に割り付けた最初の480例(本剤群320例、 対照群160例)における盲検下独立中央判定の評価に基づく無増悪生 存期間の中央値は</p>
+            
+            <div class="trial-result-three">
+              <div class="trial-result-block">
+                <p class="trial-result-block-kicker">本剤群</p>
+                <p class="trial-result-block-sub">中央値</p>
+                <p class="trial-result-block-num">7.8<span class="trial-result-block-unit">ヵ月</span></p>
+              </div>
+              <div class="trial-result-block">
+                <p class="trial-result-block-kicker">対照群</p>
+                <p class="trial-result-block-sub">中央値</p>
+                <p class="trial-result-block-num">5.6<span class="trial-result-block-unit">ヵ月</span></p>
+              </div>
+              <div class="trial-result-block trial-result-block--stat">
+                <p class="trial-result-block-kicker">統計</p>
+                <p class="trial-result-block-line">p < 0.00001</p>
+              </div>
+            </div>
             
           </div>
         </article>
