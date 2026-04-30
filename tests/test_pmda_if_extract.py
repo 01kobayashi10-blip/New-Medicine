@@ -106,6 +106,32 @@ class TestSummarizeCards(unittest.TestCase):
         self.assertIn("エタノール付加物", g)
 
 
+class TestStructureSection17(unittest.TestCase):
+    def test_trials_split_her2climb_like(self) -> None:
+        sec17 = """17.1 有効性及び安全性に関する試験
+17.1.1 海外第II相試験[HER2CLIMB(ONT-380-206)試験]
+周術期若しくは手術不能又は再発乳癌に対する化学療法として、612例を対象として二重盲検試験を実施した。
+主要評価項目である無増悪生存期間の中央値は本剤群で7.8ヵ月、対照群で5.6ヵ月であった。
+本剤群404例において、393例に副作用が認められた。主な副作用は下痢であった。
+注1)注釈ダミー
+17.1.2 国際共同第II相試験[HER2CLIMB-03(MK-7119-001)試験]
+66例を対象として非盲検試験を実施した。
+主要評価項目である奏効率は35.4%であった。
+副作用は日本人集団53例中53例に認められた。
+注1)注釈
+"""
+        d = pmda_if_extract.structure_section17_trials(sec17)
+        self.assertIsNotNone(d)
+        assert d is not None
+        self.assertGreaterEqual(len(d["trials"]), 2)
+        h0 = d["trials"][0]["heading"]
+        self.assertIn("HER2CLIMB", h0)
+        self.assertIn("612", d["trials"][0]["design"])
+        self.assertIn("7.8", d["trials"][0]["result"])
+        self.assertIn("副作用", d["trials"][0]["ae_note"])
+        self.assertIn("35.4", d["trials"][1]["result"])
+
+
 class TestStructureSection18(unittest.TestCase):
     def test_moa_intro_only_from_tucatinib_like_text(self) -> None:
         sec18 = """18.1 作用機序 

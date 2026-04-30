@@ -92,6 +92,7 @@ def render_html(
     card_efficacy: str = "",
     ident_preview: str = "",
     pharma18: dict | None = None,
+    pharma17: dict | None = None,
 ) -> str:
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATE_DIR)),
@@ -118,6 +119,7 @@ def render_html(
         card_efficacy=card_efficacy,
         ident_preview=ident_preview,
         pharma18=pharma18,
+        pharma17=pharma17,
     )
 
 
@@ -200,6 +202,7 @@ def process_item(item: dict, overrides: dict) -> tuple[str | None, str]:
             )
         cards = _cards_for_title(title, sec)
         pharma18 = pmda_if_extract.structure_section18_moa(sec.get("section_18") or "")
+        pharma17 = pmda_if_extract.structure_section17_trials(sec.get("section_17") or "")
         html = render_html(
             title_display=title[:200] + ("…" if len(title) > 200 else ""),
             stable_id=sid,
@@ -219,6 +222,7 @@ def process_item(item: dict, overrides: dict) -> tuple[str | None, str]:
             card_efficacy=cards["card_efficacy"],
             ident_preview=cards["ident_preview"],
             pharma18=pharma18,
+            pharma17=pharma17,
         )
         out_path.write_text(html, encoding="utf-8")
         return f"reports/{out_name}", "override_if" if src_pdf else "override"
@@ -282,6 +286,7 @@ def process_item(item: dict, overrides: dict) -> tuple[str | None, str]:
 
     cards = _cards_for_title(title, sec)
     pharma18 = pmda_if_extract.structure_section18_moa(sec.get("section_18") or "")
+    pharma17 = pmda_if_extract.structure_section17_trials(sec.get("section_17") or "")
     html = render_html(
         title_display=title[:200] + ("…" if len(title) > 200 else ""),
         stable_id=sid,
@@ -301,6 +306,7 @@ def process_item(item: dict, overrides: dict) -> tuple[str | None, str]:
         card_efficacy=cards["card_efficacy"],
         ident_preview=cards["ident_preview"],
         pharma18=pharma18,
+        pharma17=pharma17,
     )
     REPORTS.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding="utf-8")

@@ -531,6 +531,98 @@ def structure_section18_moa(sec18: str) -> dict[str, Any] | None:
     return {"intro": intro, "cards": []}
 
 
+def _inject_sec17_subsection_newlines(s: str) -> str:
+    """17.1.1 / 17.1.2 等の直前に改行を補う（1 行潰れ PDF 用）。"""
+    t = _nfkc(s or "")
+    return re.sub(r"(17[\.．]1[\.．]\d+)", r"\n\1", t)
+
+
+def _trim_sec17_figure_noise(s: str) -> str:
+    """図表参照の直前で本文を切る（Kaplan-Meier 等）。"""
+    m = re.search(r"盲検下独立中央判定の評価に基づく無増悪生存期間のKaplan", s)
+    if m:
+        return s[: m.start()].strip()
+    return s.strip()
+
+
+def _split_sec17_trial_paragraphs(rest: str) -> tuple[str, str, str]:
+    """試験ブロックを（デザイン概要・主要評価・副作用記述）に分割。"""
+    s = re.sub(r"\s+", " ", (rest or "").strip())
+    if not s:
+        return "", "", ""
+    m_key = re.search(r"(主要評価項目)", s)
+    if not m_key:
+        mid = min(360, max(140, len(s) // 2))
+        return _clip_moa_body(s[:mid], 400), _clip_moa_body(s[mid:], 720), ""
+    design = s[: m_key.start()].strip()
+    tail = _trim_sec17_figure_noise(s[m_key.start() :])
+    m_ae = re.search(
+        r"(本剤群\d+例において、|副作用は日本人集団|(?<=[。．])\s*副作用は\d*例中)",
+        tail,
+    )
+    if m_ae:
+        result = tail[: m_ae.start()].strip()
+        ae_block = tail[m_ae.start() :].strip()
+        m_note = re.search(r"\s+注1\)", ae_block)
+        if m_note:
+            ae_block = ae_block[: m_note.start()].strip()
+    else:
+        result = tail.strip()
+        ae_block = ""
+    result = _soften_if_reference_markers(result)
+    ae_block = _soften_if_reference_markers(ae_block)
+    return (
+        _clip_moa_body(design, 480),
+        _clip_moa_body(result, 720),
+        _clip_moa_body(ae_block, 520),
+    )
+
+
+def structure_section17_trials(sec17: str) -> dict[str, Any] | None:
+    """
+    17.1.x 試験見出しでブロック分割し、カード表示用データを返す。
+    17.1.1 形式が検出できなければ None（従来の全文表示にフォールバック）。
+    """
+    raw = (sec17 or "").strip()
+    if not raw or len(raw) < 60:
+        return None
+    t = _inject_sec17_subsection_newlines(raw)
+    if not re.search(r"17[\.．]1[\.．]\d+", t):
+        return None
+    chunks = re.split(r"(?=17[\.．]1[\.．]\d+\s)", t)
+    lead = ""
+    trials: list[dict[str, str]] = []
+    for block in chunks:
+        b = block.strip()
+        if not b:
+            continue
+        if not re.match(r"^17[\.．]1[\.．]\d+", b):
+            if not lead and re.match(r"^17[\.．]1\s", b):
+                lead = _clip_moa_body(b, 360)
+            continue
+        m_ln = re.match(r"^(17[\.．]1[\.．]\d+\s+.+?試験\])", b)
+        if not m_ln:
+            m_ln = re.match(r"^(17[\.．]1[\.．]\d+\s+[^\n]+)", b)
+        if not m_ln:
+            continue
+        heading = re.sub(r"\s+", " ", m_ln.group(1).strip())
+        rest = b[m_ln.end() :].strip()
+        if len(rest) < 18:
+            continue
+        design, result, ae_note = _split_sec17_trial_paragraphs(rest)
+        trials.append(
+            {
+                "heading": heading,
+                "design": design,
+                "result": result,
+                "ae_note": ae_note,
+            }
+        )
+    if not trials:
+        return None
+    return {"lead": lead, "trials": trials}
+
+
 def _yakka_bunrui(ident: str, sec3: str, sec4: str) -> str:
     for block in (ident, sec3, sec4):
         if not block:

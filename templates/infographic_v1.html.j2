@@ -234,6 +234,68 @@
       color: var(--slate-500);
     }
 
+    .trial-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      margin-top: 0.35rem;
+    }
+    .trial-lead {
+      margin: 0 0 0.85rem;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      color: var(--slate-600);
+      background: #f1f5f9;
+      border-radius: 0.5rem;
+      border: 1px solid var(--slate-200);
+    }
+    .trial-card {
+      border-radius: 0.95rem;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgb(0 0 0 / 0.06);
+    }
+    .trial-card-head {
+      padding: 0.9rem 1rem 0.85rem;
+      color: #fff;
+      background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand-mid) 55%, #0284c7 100%);
+    }
+    .trial-heading {
+      margin: 0;
+      font-size: 0.88rem;
+      font-weight: 700;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .trial-design {
+      margin: 0.55rem 0 0;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      color: rgb(224 242 254 / 0.98);
+    }
+    .trial-card-body {
+      margin: 0;
+      padding: 1rem 1.05rem;
+      background: var(--white);
+      border: 1px solid var(--slate-200);
+      border-top: none;
+    }
+    .trial-result {
+      margin: 0;
+      font-size: 0.86rem;
+      line-height: 1.65;
+      color: var(--slate-800);
+      font-weight: 500;
+    }
+    .trial-ae {
+      margin: 0.75rem 0 0;
+      padding-top: 0.65rem;
+      border-top: 1px solid var(--slate-200);
+      font-size: 0.72rem;
+      line-height: 1.55;
+      color: var(--slate-500);
+    }
+
     .footer-note {
       margin-top: 2rem;
       padding-top: 1.5rem;
@@ -343,9 +405,31 @@
         <span class="badge">17</span>
         臨床成績
       </h2>
+      {% if pharma17 %}
+      <p class="subhead-hint">17.1.x の試験見出しでブロック分割し、試験概要・主要評価・副作用の記述を分けて表示しています。数値の解釈は添付文書 PDF で確認してください。</p>
+      {% if pharma17.lead %}
+      <p class="trial-lead">{{ pharma17.lead }}</p>
+      {% endif %}
+      <div class="trial-stack">
+        {% for t in pharma17.trials %}
+        <article class="trial-card">
+          <div class="trial-card-head">
+            <p class="trial-heading">{{ t.heading }}</p>
+            {% if t.design %}<p class="trial-design">{{ t.design }}</p>{% endif %}
+          </div>
+          <div class="trial-card-body">
+            {% if t.result %}<p class="trial-result">{{ t.result }}</p>{% endif %}
+            {% if t.ae_note %}<p class="trial-ae">{{ t.ae_note }}</p>{% endif %}
+          </div>
+        </article>
+        {% endfor %}
+      </div>
+      <p class="moa-source">出典：添付文書「17. 臨床成績」</p>
+      {% else %}
       <div class="card">
         <div class="card-body">{{ section_17 or "—" }}</div>
       </div>
+      {% endif %}
     </section>
 
     <section class="section-block">
