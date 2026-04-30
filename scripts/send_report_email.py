@@ -5,7 +5,8 @@
   図解などの .html ファイルへのパス（相対はカレントディレクトリ、なければリポジトリルートから解決）。
   ファイルが存在し、かつ INFOGRAPHIC_ATTACH が無効でないとき multipart/mixed で添付。
 任意: INFOGRAPHIC_ATTACHMENT_NAME — 添付ファイル名（未設定時は実ファイルの basename）
-任意: INFOGRAPHIC_URL — 図解 HTML をブラウザで開く URL。設定時は平文本文の末尾に追記する。
+任意: reports/infographic_preview_manifest.json — generate スクリプトが書く「記事タイトル＋htmlpreview URL」の一覧。存在すればメール本文の図解セクションに記事ごとに出力する。
+任意: INFOGRAPHIC_URL — マニフェストが無い／空のときのみフォールバックで本文末尾に1件追記する。
   raw.githubusercontent の .html は text/plain になりソース表示になるため、表示用には https://htmlpreview.github.io/?（raw URL） 等の利用を検討する。
   htmlpreview は外部 JS（cdn.tailwindcss.com）が CSP で無効になりやすいため、図解 HTML はインライン CSS 化した reports/infographic_tukysa.html を想定する。
 任意: INFOGRAPHIC_ATTACH — "0" / "false" / "no" / "off" のいずれかならファイル添付しない（URL のみにしたいとき）。未設定時はパスが有効なら添付する。
@@ -22,6 +23,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 NOTIFY_LATEST_PATH = ROOT / "reports" / "notify_latest.json"
+PREVIEW_MANIFEST_PATH = ROOT / "reports" / "infographic_preview_manifest.json"
 
 
 def load_latest_items() -> list[dict[str, str]]:
@@ -69,6 +71,29 @@ def resolve_infographic_path(raw: str) -> Path | None:
         f"::warning::INFOGRAPHIC_HTML_PATH が見つかりません: {raw!r}。添付なしで送信します。"
     )
     return None
+
+
+def load_preview_manifest_items() -> list[dict[str, str]]:
+    if not PREVIEW_MANIFEST_PATH.is_file():
+        return []
+    try:
+        with open(PREVIEW_MANIFEST_PATH, encoding="utf-8") as f:
+            data = json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return []
+    raw_items = data.get("items")
+    if not isinstance(raw_items, list):
+        return []
+    out: list[dict[str, str]] = []
+    for it in raw_items:
+        if not isinstance(it, dict):
+            continue
+        preview_url = str(it.get("preview_url") or "").strip()
+        if not preview_url:
+            continue
+        title = str(it.get("title") or "").strip() or preview_url
+        out.append({"title": title, "preview_url": preview_url})
+    return out
 
 
 def format_latest_hatsubai_block(items: list[dict[str, str]]) -> str:
@@ -131,9 +156,16 @@ def main() -> int:
             link if link else "（リンクなし）",
         ]
 
-    infographic_url = os.environ.get("INFOGRAPHIC_URL", "").strip()
-    if infographic_url:
-        lines.extend(["", "図解まとめ（HTML・ブラウザで開く）:", infographic_url])
+    manifest_items = load_preview_manifest_items()
+    if manifest_items:
+        lines.extend(["", "図解まとめ（HTML・ブラウザで開く）:"])
+        for it in manifest_items:
+            lines.append(f"- {it['title']}")
+            lines.append(f"  {it['preview_url']}")
+    else:
+        infographic_url = os.environ.get("INFOGRAPHIC_URL", "").strip()
+        if infographic_url:
+            lines.extend(["", "図解まとめ（HTML・ブラウザで開く）:", infographic_url])
 
     body = "\n".join(lines)
 

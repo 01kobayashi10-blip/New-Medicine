@@ -21,6 +21,7 @@ import rss_pmda_resolve
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 QUEUE_PATH = ROOT / "reports" / "generate_queue.json"
+PREVIEW_MANIFEST_PATH = ROOT / "reports" / "infographic_preview_manifest.json"
 OVERRIDES_PATH = ROOT / "data" / "pmda_overrides.json"
 MULTI_PATH = ROOT / "data" / "pmda_multi_candidates.json"
 REPORTS = ROOT / "reports"
@@ -325,6 +326,13 @@ def process_item(item: dict, overrides: dict) -> tuple[str | None, str]:
     return f"reports/{out_name}", "extract" if src_pdf else "skeleton"
 
 
+def preview_url_for_rel(repo: str, ref: str, rel: str) -> str:
+    if not (repo and ref and rel):
+        return ""
+    raw = f"https://raw.githubusercontent.com/{repo}/{ref}/{rel}"
+    return f"https://htmlpreview.github.io/?{raw}"
+
+
 def append_github_output(**pairs: str) -> None:
     path = os.environ.get("GITHUB_OUTPUT")
     if not path:
@@ -342,33 +350,47 @@ def main() -> int:
 
     if not QUEUE_PATH.is_file():
         print("No generate_queue.json; skip.")
+        PREVIEW_MANIFEST_PATH.unlink(missing_ok=True)
         append_github_output(infographic_primary="", infographic_paths="", infographic_url="")
         return 0
     queue = load_json(QUEUE_PATH, {"items": []})
     items = queue.get("items") if isinstance(queue, dict) else []
     if not items:
         print("Empty generate queue; skip.")
+        PREVIEW_MANIFEST_PATH.unlink(missing_ok=True)
         append_github_output(infographic_primary="", infographic_paths="", infographic_url="")
         return 0
 
+    repo = os.environ.get("GITHUB_REPOSITORY", "").strip()
+    ref = os.environ.get("GITHUB_REF_NAME", "").strip()
     written: list[str] = []
+    manifest_rows: list[dict[str, str]] = []
     for it in items:
         if not isinstance(it, dict) or not it.get("stable_id"):
             continue
         rel, reason = process_item(it, overrides)
         if rel:
             written.append(rel)
+            title = str(it.get("title") or "").strip() or str(it.get("link") or "").strip()
+            manifest_rows.append(
+                {
+                    "title": title,
+                    "preview_url": preview_url_for_rel(repo, ref, rel),
+                }
+            )
             print(f"Wrote {rel} ({reason})")
         else:
             print(f"Skipped {it.get('stable_id')}: {reason}")
 
     primary = written[0] if written else ""
-    repo = os.environ.get("GITHUB_REPOSITORY", "").strip()
-    ref = os.environ.get("GITHUB_REF_NAME", "").strip()
-    preview_url = ""
-    if primary and repo and ref:
-        raw = f"https://raw.githubusercontent.com/{repo}/{ref}/{primary}"
-        preview_url = f"https://htmlpreview.github.io/?{raw}"
+    preview_url = preview_url_for_rel(repo, ref, primary) if primary else ""
+    save_json(
+        PREVIEW_MANIFEST_PATH,
+        {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "items": manifest_rows,
+        },
+    )
     append_github_output(
         infographic_primary=primary,
         infographic_paths=",".join(written),

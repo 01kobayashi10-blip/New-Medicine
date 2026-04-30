@@ -4,7 +4,7 @@
 #   SMTP_PASSWORD Gmail ならアプリパスワード（2 段階認証後に発行）
 #   MAIL_TO       通知の受信先
 # 任意: SMTP_PORT（未設定時はスクリプト側で 587）、MAIL_FROM（未設定時は SMTP_USER と同じ）、MAIL_SUBJECT
-# 任意: Notify Email の env — INFOGRAPHIC_URL で図解を本文に直リンク（GitHub 上の HTML）。
+# 任意: Notify Email — 図解URLは generate が reports/infographic_preview_manifest.json に書き、send_report_email が記事ごとに本文へ載せる。
 #       INFOGRAPHIC_ATTACH=0 と併用すると添付なし・本文リンクのみ。
 # 任意: 図解生成 — PMDA_IF_FETCH_DISABLED=1 で GeneralList/PDF 取得と章抜粋をスキップ（検索のみ試す場合など）。
 #       PMDA_IF_HTTP_TIMEOUT / PMDA_IF_MAX_PDF_BYTES / PMDA_IF_MAX_SECTION_CHARS も調整可。
@@ -22,7 +22,7 @@ on:
   workflow_dispatch:
     inputs:
       queue_infographic_without_new:
-        description: "新規0件でもRSSの実発売フィルタ通過の先頭1件で図解HTMLを試行する（既定オン）"
+        description: "新規0件でもRSSの実発売フィルタ通過の先頭EMAIL_TOP_N件で図解HTMLを試行する（既定オン）"
         type: boolean
         default: true
 
@@ -61,7 +61,7 @@ jobs:
           HATSUBAI_EXCLUDE_SUBSTRINGS: "発売予定,発売を予定,発売は「"
           # メール/Slack に載せる記事の直近件数（既定 5）
           EMAIL_TOP_N: "5"
-          # 手動実行時: 新規0でも先頭1件を図解キューへ（スケジュールでは常に false 扱い）
+          # 手動実行時: 新規0でも先頭 EMAIL_TOP_N 件を図解キューへ（スケジュールでは常に false 扱い）
           DISPATCH_QUEUE_INFOGRAPHIC_WITHOUT_NEW: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.queue_infographic_without_new || false }}
 
       - name: Validate PMDA JSON
@@ -120,7 +120,5 @@ jobs:
           MAIL_SUBJECT: "Mix Online 発売記事: 新規検出"
           NEW_COUNT: ${{ steps.fetch.outputs.new_count }}
           LINK: ${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/reports/latest.html
-          # 図解（先頭 1 件・htmlpreview）。generate スクリプトが GITHUB_OUTPUT に書く完全 URL。
-          INFOGRAPHIC_URL: ${{ steps.generate.outputs.infographic_url }}
           INFOGRAPHIC_ATTACH: "0"
         run: python scripts/send_report_email.py

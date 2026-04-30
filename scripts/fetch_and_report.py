@@ -455,9 +455,10 @@ def main() -> int:
 
     queue_for_generate = new_entries
     if not new_entries and _dispatch_queue_infographic_without_new() and matched:
-        queue_for_generate = matched[:1]
+        queue_for_generate = matched[: max(1, top_n)]
         print(
-            "workflow_dispatch: RSS 上のフィルタ通過記事の先頭1件を図解キューに載せます（新規0件・processed は更新しません）。"
+            "workflow_dispatch: RSS 上のフィルタ通過記事の先頭 "
+            f"{len(queue_for_generate)} 件を図解キューに載せます（新規0件・processed は更新しません）。"
         )
     write_generate_queue(queue_for_generate)
 

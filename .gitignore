@@ -1,2 +1,5 @@
 __pycache__/
 *.py[cod]
+
+# CI 実行時のみメール用に生成（コミット対象外）
+reports/infographic_preview_manifest.json
