@@ -107,7 +107,7 @@ class TestSummarizeCards(unittest.TestCase):
 
 
 class TestStructureSection18(unittest.TestCase):
-    def test_moa_cards_from_tucatinib_like_text(self) -> None:
+    def test_moa_intro_only_from_tucatinib_like_text(self) -> None:
         sec18 = """18.1 作用機序 
 ツカチニブは、HER2のキナーゼ活性を阻害することにより、腫瘍の
 増殖を抑制すると考えられている18)。 
@@ -125,9 +125,8 @@ class TestStructureSection18(unittest.TestCase):
         self.assertIsNotNone(d)
         assert d is not None
         self.assertIn("HER2", d["intro"])
-        self.assertEqual(len(d["cards"]), 2)
-        self.assertTrue(d["cards"][-1]["accent"])
-        self.assertIn("BT-474", d["cards"][1]["body"])
+        self.assertEqual(d["cards"], [])
+        self.assertNotIn("BT-474", d["intro"])
 
 
 class TestSplitIfSections(unittest.TestCase):

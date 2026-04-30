@@ -493,12 +493,10 @@ def _efficacy_one_liner(sec4: str, max_chars: int = 200) -> str:
 
 
 def _inject_sec18_structure_newlines(s: str) -> str:
-    """PDF で 18.1〜18.2.2 が 1 行に潰れている場合に改行を補う。"""
+    """PDF で 18.1 見出しや 18.2 見出しが前行に潰れている場合に改行を補う。"""
     t = _nfkc(s or "")
     t = re.sub(r"(18[\.．]1\s*作用機序)\s*", r"\1\n", t)
     t = re.sub(r"(18[\.．]2\s*抗腫瘍作用)\s*", r"\n\1\n", t)
-    t = re.sub(r"(18[\.．]2[\.．]1\s*in\s*vitro)\s*", r"\n\1\n", t, flags=re.I)
-    t = re.sub(r"(18[\.．]2[\.．]2\s*in\s*vivo)\s*", r"\n\1\n", t, flags=re.I)
     return t
 
 
@@ -515,7 +513,7 @@ def _clip_moa_body(s: str, max_chars: int) -> str:
 
 
 def structure_section18_moa(sec18: str) -> dict[str, Any] | None:
-    """18 章から 18.1 作用機序と in vitro / in vivo を分割（図解カード用）。該当構造が無ければ None。"""
+    """18 章から 18.1 作用機序の本文のみを抽出（図解のメイン表示用）。該当が無ければ None。"""
     raw = (sec18 or "").strip()
     if not raw or len(raw) < 30:
         return None
@@ -530,45 +528,7 @@ def structure_section18_moa(sec18: str) -> dict[str, Any] | None:
         return None
     body181 = _soften_if_reference_markers(body181)
     intro = _clip_moa_body(body181, 1200)
-
-    m211 = re.search(
-        r"18[\.．]2[\.．]1\s*in\s*vitro\s*(.*?)(?=18[\.．]2[\.．]2\s*in\s*vivo|$)",
-        t,
-        re.DOTALL | re.I,
-    )
-    m212 = re.search(r"18[\.．]2[\.．]2\s*in\s*vivo\s*(.*)$", t, re.DOTALL | re.I)
-    b211 = _soften_if_reference_markers((m211.group(1).strip() if m211 else "") or "")
-    b212 = _soften_if_reference_markers((m212.group(1).strip() if m212 else "") or "")
-
-    cards: list[dict[str, Any]] = []
-    if b211:
-        cards.append(
-            {
-                "label": "18.2.1",
-                "title": "試験管内（in vitro）",
-                "body": _clip_moa_body(b211, 900),
-            }
-        )
-    if b212:
-        cards.append(
-            {
-                "label": "18.2.2",
-                "title": "試験体内（in vivo）",
-                "body": _clip_moa_body(b212, 900),
-            }
-        )
-    if not cards:
-        cards.append(
-            {
-                "label": "18.1",
-                "title": "作用機序",
-                "body": _clip_moa_body(body181, 1000),
-            }
-        )
-    for i, c in enumerate(cards):
-        c["accent"] = i == len(cards) - 1
-
-    return {"intro": intro, "cards": cards}
+    return {"intro": intro, "cards": []}
 
 
 def _yakka_bunrui(ident: str, sec3: str, sec4: str) -> str:
