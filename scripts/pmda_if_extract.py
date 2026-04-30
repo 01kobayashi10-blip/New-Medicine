@@ -1001,6 +1001,201 @@ def _ae_items_from_sec17(ae_block: str, *, max_items: int = 8) -> list[str]:
     return []
 
 
+def _dosage6710_line_starts_segment(line: str) -> bool:
+    """章6・7・10 および減量表見出しの行頭判定（PDF 改行結合用）。"""
+    s = line.strip()
+    if not s:
+        return False
+    if re.match(r"^6\.\s*用法及び用量", s):
+        return True
+    if re.match(r"^7\.\s*用法及び用量に関連", s):
+        return True
+    if re.match(r"^7\.\s*[1-9]\d*\s+", s):
+        return True
+    if re.match(r"^10\.", s):
+        return True
+    if s.startswith("減量・中止") or s.startswith("副作用に対する休薬"):
+        return True
+    if re.match(r"^通常投与量", s) or re.match(r"^[1-4]段階減量", s):
+        return True
+    if re.match(r"^体表面積", s):
+        return True
+    if re.match(r"^ULN[:：]", s) or s.startswith("a)Grade"):
+        return True
+    return False
+
+
+def _sec6710_merge_broken_lines(text: str) -> str:
+    """6–10 抜粋テキストの PDF 由来改行を結合する。"""
+    lines = [ln.strip() for ln in _sec11_normalize_dots(text or "").split("\n")]
+    lines = [ln for ln in lines if ln]
+    if not lines:
+        return ""
+    out: list[str] = []
+    for line in lines:
+        if not out:
+            out.append(line)
+            continue
+        prev = out[-1]
+        if _dosage6710_line_starts_segment(line):
+            out.append(line)
+            continue
+        if prev.endswith(
+            ("。", "．", "?", "！", "」", "』", "]", "）", ")", "削る。", "する。")
+        ):
+            out.append(line)
+            continue
+        out[-1] = prev + line
+    return "\n".join(out)
+
+
+def _dosage_extract_7_subsection(full: str, num: str) -> str:
+    """7.n 小節本文（次の 7.m / 減量表 / 10 まで）。"""
+    m = re.search(rf"(?m)^7\.\s*{num}\s+", full)
+    if not m:
+        return ""
+    rest = full[m.end() :]
+    m_end = re.search(
+        r"(?m)^7\.\s*(?:[1-9]|1[0-9])\s+|^減量・中止|^副作用に対する休薬|^10\.",
+        rest,
+    )
+    body = rest[: m_end.start()] if m_end else rest
+    body = body.replace("\n", " ")
+    body = re.sub(r"\s+", " ", body).strip()
+    cut = body.find("減量・中止する場合の投与量")
+    if cut != -1:
+        body = body[:cut].strip()
+    return body
+
+
+def _dosage_standard_bullet(sec6_body: str) -> str | None:
+    """6 章本文から標準用法の1行メモを組み立てる。"""
+    line = re.sub(r"\s+", " ", (sec6_body or "").strip())
+    if len(line) < 24:
+        return None
+    dose_m = re.search(r"1回\s*(\d+)\s*m[gｇ]", line, re.I)
+    day_m = re.search(r"1日\s*(\d+)\s*回", line)
+    if not dose_m or not day_m:
+        return None
+    dose, nday = dose_m.group(1), day_m.group(1)
+    ing_m = re.search(
+        r"(?:通常、|通常)?(?:成人|小児等|患者)には\s*([^\s、。]+(?:\s+[^\s、。]+){0,4}?)\s*として\s*1回",
+        line,
+    )
+    ing = ing_m.group(1).strip() if ing_m else "本剤"
+    combo_m = re.search(r"(.+?(?:との併用において|併用において))", line)
+    if combo_m:
+        combo = combo_m.group(1).strip()
+        bullet = (
+            f"{combo}、通常成人には{ing}として1回{dose}mgを1日{nday}回経口"
+        )
+    else:
+        bullet = f"通常成人には{ing}として1回{dose}mgを1日{nday}回経口"
+    if not bullet.endswith("経口") and "経口投与" in line:
+        bullet += "投与"
+    elif not re.search(r"経口(投与)?$", bullet):
+        bullet += "経口"
+    bullet += "。"
+    if "適宜減量" in line or "減量する" in line:
+        bullet += "患者の状態により適宜減量（添付文書「6」「7.3」）。"
+    else:
+        bullet += "（添付文書「6」）。"
+    return bullet
+
+
+def _dosage_hepatic_bullet(b72: str) -> str | None:
+    if not b72 or ("肝" not in b72 and "Child" not in b72):
+        return None
+    dm = re.search(r"1回\s*(\d+)\s*m[gｇ].{0,120}?1日\s*(\d+)\s*回", b72, re.I | re.DOTALL)
+    if dm:
+        d1, nfreq = dm.group(1), dm.group(2)
+    else:
+        dm2 = re.search(r"1回\s*(\d+)\s*m[gｇ]", b72, re.I)
+        if not dm2:
+            return None
+        d1 = dm2.group(1)
+        nfreq_m = re.search(r"1日\s*(\d+)\s*回", b72)
+        nfreq = nfreq_m.group(1) if nfreq_m else "2"
+    return (
+        f"重度の肝機能障害（Child-Pugh 分類 C）では開始用量 1 回 {d1}mg を "
+        f"1 日 {nfreq} 回（「7.2」）。"
+    )
+
+
+def _dosage_cyp_bullet(b74: str) -> str | None:
+    if not b74 or "CYP2C8" not in b74:
+        return None
+    dm = re.search(r"1回\s*(\d+)\s*m[gｇ].{0,120}?1日\s*(\d+)\s*回", b74, re.I | re.DOTALL)
+    if not dm:
+        return None
+    return (
+        f"強い CYP2C8 阻害剤併用時は開始用量 1 回 {dm.group(1)}mg を "
+        f"1 日 {dm.group(2)} 回（「7.4」）。"
+    )
+
+
+def structure_dosage_memo(section_6710: str) -> dict[str, Any] | None:
+    """
+    section_6710（章6・7 + 章10）から図解用の箇条書きメモを組み立てる。
+    パース不能・情報不足時は None（テンプレは全文表示にフォールバック）。
+    """
+    raw = (section_6710 or "").strip()
+    if len(raw) < 120:
+        return None
+    merged = _sec6710_merge_broken_lines(raw)
+    if len(merged) < 100:
+        return None
+
+    m6 = re.search(
+        r"(?ms)^6\.\s*用法及び用量\s*(.*?)(?=^7\.\s*用法及び用量に関連)",
+        merged,
+    )
+    sec6_body = (m6.group(1).strip() if m6 else "").strip()
+    if sec6_body.startswith("用法及び用量"):
+        sec6_body = re.sub(r"^用法及び用量\s*", "", sec6_body).strip()
+
+    bullets: list[str] = []
+    std = _dosage_standard_bullet(sec6_body) if sec6_body else None
+    if std:
+        bullets.append(std)
+
+    b72 = _dosage_extract_7_subsection(merged, "2")
+    hb = _dosage_hepatic_bullet(b72)
+    if hb:
+        bullets.append(hb)
+
+    b74 = _dosage_extract_7_subsection(merged, "4")
+    cb = _dosage_cyp_bullet(b74)
+    if cb:
+        bullets.append(cb)
+
+    b71 = _dosage_extract_7_subsection(merged, "1")
+    b75 = _dosage_extract_7_subsection(merged, "5")
+    note71 = ""
+    if b71 and ("単独" in b71 or "確立" in b71 or "有効性" in b71):
+        first = b71.split("。")[0].strip()
+        frag = (first + "。") if first and not first.endswith("。") else (first or "")
+        frag = _clip_moa_body(frag, 220)
+        if frag:
+            note71 = frag + "（「7.1」）"
+    note75 = ""
+    if b75 and ("カペシタビン" in b75 or "併用" in b75):
+        note75 = "カペシタビン用量は添付文書「7.5」に表あり（「7.5」）。"
+    if note71 or note75:
+        combined = " ".join(x for x in (note71, note75) if x).strip()
+        if combined:
+            bullets.append(combined)
+
+    if not bullets:
+        return None
+
+    return {
+        "panel_title": "用法・用量のメモ（概要）",
+        "bullets": bullets,
+        "source_note": "添付文書「6」「7」「10」より自動要約（詳細は抜粋全文を参照）。",
+    }
+
+
 def _enrich_sec17_trial_dict(
     design_full: str, result_full: str, ae_full: str
 ) -> dict[str, Any]:

@@ -145,6 +145,47 @@
       word-break: break-word;
     }
 
+    .dosage-memo {
+      margin: 0 0 1rem;
+      padding: 1rem 1.15rem;
+      background: rgb(248 250 252);
+      border: 1px solid var(--slate-200);
+      border-radius: 0.75rem;
+    }
+    .dosage-memo-title {
+      margin: 0 0 0.65rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--brand-dark);
+    }
+    .dosage-memo-ul {
+      margin: 0;
+      padding-left: 1.15rem;
+      font-size: 0.875rem;
+      line-height: 1.65;
+      color: var(--slate-800);
+    }
+    .dosage-memo-li { margin: 0.35rem 0; }
+    .dosage-memo-note {
+      margin: 0.65rem 0 0;
+      font-size: 0.72rem;
+      color: var(--slate-500);
+      line-height: 1.5;
+    }
+    .dosage-raw {
+      margin-top: 0.85rem;
+      border-radius: 0.5rem;
+      border: 1px dashed var(--slate-200);
+      padding: 0.35rem 0.65rem;
+      font-size: 0.78rem;
+      color: var(--slate-600);
+    }
+    .dosage-raw summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: var(--slate-600);
+    }
+
     .card-grid {
       display: grid;
       gap: 1rem;
@@ -643,9 +684,31 @@
         <span class="badge">6–10</span>
         用法・用量・相互作用（メモ）
       </h2>
+      {% if pharma6710 and pharma6710.bullets and pharma6710.bullets|length > 0 %}
+      <div class="card">
+        <div class="dosage-memo">
+          <p class="dosage-memo-title">{{ pharma6710.panel_title }}</p>
+          <ul class="dosage-memo-ul">
+            {% for line in pharma6710.bullets %}
+            <li class="dosage-memo-li">{{ line }}</li>
+            {% endfor %}
+          </ul>
+          {% if pharma6710.source_note %}
+          <p class="dosage-memo-note">{{ pharma6710.source_note }}</p>
+          {% endif %}
+        </div>
+        {% if section_6710 and section_6710.strip() %}
+        <details class="dosage-raw">
+          <summary>章6・7・10の抜粋全文を表示</summary>
+          <div class="card-body" style="margin-top: 0.65rem;">{{ section_6710 }}</div>
+        </details>
+        {% endif %}
+      </div>
+      {% else %}
       <div class="card">
         <div class="card-body">{{ section_6710 or "—" }}</div>
       </div>
+      {% endif %}
     </section>
 
     <footer class="footer-note">

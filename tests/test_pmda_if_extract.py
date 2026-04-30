@@ -344,5 +344,40 @@ x
         self.assertIn("相互作用本文", d["section_6710"])
 
 
+class TestStructureDosageMemo(unittest.TestCase):
+    def test_tucatinib_like_multiline(self) -> None:
+        raw = """
+6. 用法及び用量
+トラスツズマブ(遺伝子組換え)及びカペシタビンとの併用におい
+て、通常、成人にはツカチニブとして1回300mgを1日2回経口投与す
+る。なお、患者の状態により適宜減量する。
+
+7. 用法及び用量に関連する注意
+7.1 本剤単独投与での有効性及び安全性は確立していない。
+7.2 重度の肝機能障害(Child-Pugh分類C)のある患者では、本剤の開
+始用量は1回200mgを1日2回とすること。
+7.4 強いCYP2C8阻害剤と併用する場合、本剤の開始用量は1回100mgを
+1日2回とすること。
+7.5 本剤とトラスツズマブ及びカペシタビンを併用する際のカペシタビンの用法及び用量は以下のとおりとすること。
+
+10. 相互作用
+10.1 併用禁忌
+本文
+"""
+        r = pmda_if_extract.structure_dosage_memo(raw)
+        self.assertIsNotNone(r)
+        bullets = r["bullets"]
+        self.assertTrue(any("300mg" in b and "ツカチニブ" in b for b in bullets))
+        self.assertTrue(any("200mg" in b and "7.2" in b for b in bullets))
+        self.assertTrue(any("CYP2C8" in b and "100mg" in b for b in bullets))
+        self.assertTrue(any("7.1" in b for b in bullets))
+        self.assertTrue(any("7.5" in b and "カペシタビン" in b for b in bullets))
+
+    def test_too_short_returns_none(self) -> None:
+        self.assertIsNone(
+            pmda_if_extract.structure_dosage_memo("6. 用法及び用量\n用法\n")
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
