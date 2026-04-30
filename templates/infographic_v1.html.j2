@@ -639,7 +639,7 @@
           {% if pharma11.other_items and pharma11.other_items|length > 0 %}
           <ul class="ae2-ul">
             {% for row in pharma11.other_items %}
-            <li class="ae2-li"><span class="ae2-li-dot" aria-hidden="true">•</span><span><strong>{{ row.symptom }}</strong>（{{ row.soc }}）</span></li>
+            <li class="ae2-li"><span class="ae2-li-dot" aria-hidden="true">•</span><span><strong>{{ row.symptom }}</strong></span></li>
             {% endfor %}
           </ul>
           {% else %}
