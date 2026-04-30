@@ -348,6 +348,22 @@
       line-height: 1.65;
       color: var(--slate-800);
     }
+    .trial-summary-card-lead {
+      margin: 0 0 0.55rem;
+      font-size: 0.88rem;
+      font-weight: 600;
+      line-height: 1.55;
+      color: var(--brand-dark);
+    }
+    .trial-summary-bullets {
+      margin: 0;
+      padding-left: 1.15rem;
+      font-size: 0.8rem;
+      line-height: 1.65;
+      color: var(--slate-800);
+      list-style-type: disc;
+    }
+    .trial-summary-bullets li { margin: 0.28rem 0; padding-left: 0.1rem; }
     .trial-result-label {
       margin: 0 0 0.4rem;
       font-size: 0.78rem;
@@ -599,13 +615,27 @@
               {% if t.population_line %}
               <div class="trial-summary-card">
                 <p class="trial-summary-card-label">対象患者</p>
+                {% if t.population_lead %}
+                <p class="trial-summary-card-lead">{{ t.population_lead }}</p>
+                {% endif %}
+                {% if t.population_bullets and t.population_bullets|length > 0 %}
+                <ul class="trial-summary-bullets">{% for line in t.population_bullets %}<li>{{ line }}</li>{% endfor %}</ul>
+                {% elif not t.population_lead %}
                 <p class="trial-summary-card-text">{{ t.population_line }}</p>
+                {% endif %}
               </div>
               {% endif %}
               {% if t.protocol_line %}
               <div class="trial-summary-card">
                 <p class="trial-summary-card-label">試験デザイン</p>
+                {% if t.protocol_lead %}
+                <p class="trial-summary-card-lead">{{ t.protocol_lead }}</p>
+                {% endif %}
+                {% if t.protocol_bullets and t.protocol_bullets|length > 0 %}
+                <ul class="trial-summary-bullets">{% for line in t.protocol_bullets %}<li>{{ line }}</li>{% endfor %}</ul>
+                {% elif not t.protocol_lead %}
                 <p class="trial-summary-card-text">{{ t.protocol_line }}</p>
+                {% endif %}
               </div>
               {% endif %}
               {% if t.primary_endpoint_label %}

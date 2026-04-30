@@ -146,6 +146,20 @@ class TestStructureSection17(unittest.TestCase):
         self.assertIn("HER2CLIMB", t0.get("heading_display", ""))
         self.assertEqual("無増悪生存期間の中央値", t0.get("primary_endpoint_label", ""))
         self.assertEqual("奏効率", t1.get("primary_endpoint_label", ""))
+        self.assertTrue(t0.get("population_lead"))
+        self.assertIn("612", t0.get("population_lead", ""))
+
+    def test_lead_and_bullets_from_paragraph(self) -> None:
+        a, b = pmda_if_extract._lead_and_bullets_from_paragraph(
+            "一文目である。二文目である。三文目。"
+        )
+        self.assertIn("一文目", a)
+        self.assertEqual(len(b), 2)
+        self.assertIn("二文目", b[0])
+        self.assertIn("三文目", b[1])
+        one, rest = pmda_if_extract._lead_and_bullets_from_paragraph("単文のみ。")
+        self.assertEqual(one, "単文のみ。")
+        self.assertEqual(rest, [])
 
     def test_sec17_colon_ci_in_result(self) -> None:
         result = (

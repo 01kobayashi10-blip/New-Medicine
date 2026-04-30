@@ -1223,6 +1223,45 @@ def structure_dosage_memo(section_6710: str) -> dict[str, Any] | None:
     }
 
 
+def _lead_and_bullets_from_paragraph(
+    text: str, *, lead_max: int = 200
+) -> tuple[str, list[str]]:
+    """
+    句点で分割し、先頭文を1行リード、それ以降を箇条書きにする。
+    先頭文のみが lead_max を超える場合はリードを短縮し、続きを先頭の箇条書きに回す。
+    """
+    t = re.sub(r"\s+", " ", (text or "").strip())
+    if not t:
+        return "", []
+    parts = [p.strip() for p in re.split(r"(?<=[。．])\s*", t) if p.strip()]
+    if not parts:
+        return "", []
+    first, tail = parts[0], parts[1:]
+    tn = re.sub(r"\s+", " ", first.strip())
+    bullets: list[str] = []
+
+    if len(tn) > lead_max:
+        raw_cut = tn[: lead_max - 1].rstrip()
+        lead = raw_cut + "…"
+        rem = tn[len(raw_cut) :].strip()
+        if rem:
+            if not rem.endswith(("。", "．")):
+                rem = rem + "。"
+            bullets.append(rem)
+    else:
+        lead = tn
+
+    for p in tail:
+        seg = p.strip()
+        if not seg:
+            continue
+        if not seg.endswith(("。", "．")):
+            seg = seg + "。"
+        bullets.append(seg)
+
+    return lead, bullets
+
+
 def _enrich_sec17_trial_dict(
     design_full: str, result_full: str, ae_full: str
 ) -> dict[str, Any]:
@@ -1233,6 +1272,14 @@ def _enrich_sec17_trial_dict(
         "ae_items": _ae_items_from_sec17(ae_full),
     }
     out.update(_labeled_fields_from_sec17(design_full, result_full))
+    pop_line = (out.get("population_line") or "").strip()
+    prot_line = (out.get("protocol_line") or "").strip()
+    pl, pbl = _lead_and_bullets_from_paragraph(pop_line)
+    prl, prbl = _lead_and_bullets_from_paragraph(prot_line)
+    out["population_lead"] = pl
+    out["population_bullets"] = pbl
+    out["protocol_lead"] = prl
+    out["protocol_bullets"] = prbl
     return out
 
 
