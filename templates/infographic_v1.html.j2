@@ -172,19 +172,6 @@
       color: var(--slate-500);
       line-height: 1.5;
     }
-    .dosage-raw {
-      margin-top: 0.85rem;
-      border-radius: 0.5rem;
-      border: 1px dashed var(--slate-200);
-      padding: 0.35rem 0.65rem;
-      font-size: 0.78rem;
-      color: var(--slate-600);
-    }
-    .dosage-raw summary {
-      cursor: pointer;
-      font-weight: 600;
-      color: var(--slate-600);
-    }
 
     .card-grid {
       display: grid;
@@ -697,12 +684,6 @@
           <p class="dosage-memo-note">{{ pharma6710.source_note }}</p>
           {% endif %}
         </div>
-        {% if section_6710 and section_6710.strip() %}
-        <details class="dosage-raw">
-          <summary>章6・7・10の抜粋全文を表示</summary>
-          <div class="card-body" style="margin-top: 0.65rem;">{{ section_6710 }}</div>
-        </details>
-        {% endif %}
       </div>
       {% else %}
       <div class="card">

@@ -1219,7 +1219,7 @@ def structure_dosage_memo(section_6710: str) -> dict[str, Any] | None:
     return {
         "panel_title": "用法・用量のメモ（概要）",
         "bullets": bullets,
-        "source_note": "添付文書「6」「7」「10」より自動要約（詳細は抜粋全文を参照）。",
+        "source_note": "添付文書「6」「7」「10」より自動要約。",
     }
 
 
