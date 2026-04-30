@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fetch Mix Online RSS, filter titles containing 「発売」, update state and HTML when new items appear."""
+"""Fetch Mix Online RSS, filter titles for 実発売記事, update state and HTML when new items appear."""
 
 from __future__ import annotations
 
@@ -28,6 +28,43 @@ DEFAULT_RSS = (
 
 # RSS の link が / で始まる相対URLのとき、file:// で開いた HTML からも辿れるよう絶対化する基準
 LINK_BASE = "https://www.mixonline.jp/"
+
+
+def _parse_exclude_substrings(raw: str) -> list[str]:
+    out: list[str] = []
+    for part in raw.split(","):
+        s = part.strip()
+        if s:
+            out.append(s)
+    return out
+
+
+def title_matches_hatsubai(
+    title: str,
+    *,
+    require_substring: str,
+    base_substring: str,
+    exclude_substrings: list[str],
+) -> bool:
+    """実発売の見出しに寄せる。require が空なら従来どおり base のみ（除外は常に適用）。"""
+    if require_substring:
+        if require_substring not in title:
+            return False
+    else:
+        if base_substring not in title:
+            return False
+    for ex in exclude_substrings:
+        if ex in title:
+            return False
+    return True
+
+
+def load_hatsubai_filter_from_environ() -> tuple[str, str, list[str]]:
+    """(require, base, excludes)。未設定時は「を発売」必須＋発売予定系除外。"""
+    require = os.environ.get("HATSUBAI_REQUIRE_SUBSTRING", "を発売").strip()
+    base = os.environ.get("HATSUBAI_BASE_SUBSTRING", "発売").strip() or "発売"
+    raw_ex = os.environ.get("HATSUBAI_EXCLUDE_SUBSTRINGS", "発売予定,発売を予定")
+    return require, base, _parse_exclude_substrings(raw_ex)
 
 
 def canonical_item_id(raw: str) -> str:
@@ -105,7 +142,7 @@ def build_html(
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ミクスOnline「発売」記事スナップショット</title>
+  <title>ミクスOnline 実発売記事スナップショット</title>
   <style>
     body {{ font-family: system-ui, sans-serif; max-width: 48rem; margin: 2rem auto; padding: 0 1rem; }}
     h1 {{ font-size: 1.25rem; }}
@@ -116,7 +153,7 @@ def build_html(
   </style>
 </head>
 <body>
-  <h1>ミクスOnline RSS — タイトルに「発売」を含む記事</h1>
+  <h1>ミクスOnline RSS — 実発売として抽出した記事</h1>
   <p class="meta">{html.escape(meta_line, quote=True)}</p>
   {new_note}
   <ul>
@@ -177,7 +214,7 @@ def write_generate_queue(new_entries: list[feedparser.FeedParserDict]) -> None:
 
 
 def write_notify_latest(rows: list[tuple[str, str, str]], top_n: int) -> None:
-    """メール/Slack 用: RSS 上の「発売」記事の先頭 top_n 件（通常は新しい順）。"""
+    """メール/Slack 用: フィルタ通過後の記事の先頭 top_n 件（通常は新しい順）。"""
     slice_rows = rows[: max(0, top_n)]
     items = [
         {"title": t, "link": u, "published": p} for t, u, p in slice_rows
@@ -210,11 +247,17 @@ def main() -> int:
         print("ERROR: could not parse RSS", file=sys.stderr)
         return 1
 
+    require, base, excludes = load_hatsubai_filter_from_environ()
     total = len(feed.entries)
     matched: list[feedparser.FeedParserDict] = []
     for entry in feed.entries:
         title = entry.get("title") or ""
-        if "発売" in title:
+        if title_matches_hatsubai(
+            title,
+            require_substring=require,
+            base_substring=base,
+            exclude_substrings=excludes,
+        ):
             sid = stable_id(entry)
             if sid:
                 matched.append(entry)
@@ -235,7 +278,7 @@ def main() -> int:
     if not matched:
         write_notify_latest([], int(os.environ.get("EMAIL_TOP_N", "5")))
         write_generate_queue([])
-        print("No 発売 items in current RSS; leaving reports and state unchanged.")
+        print("No matched hatsubai items in current RSS; leaving reports and state unchanged.")
         return 0
 
     rows: list[tuple[str, str, str]] = []
@@ -273,7 +316,7 @@ def main() -> int:
     if not new_entries and _dispatch_queue_infographic_without_new() and matched:
         queue_for_generate = matched[:1]
         print(
-            "workflow_dispatch: RSS 上の発売記事の先頭1件を図解キューに載せます（新規0件・processed は更新しません）。"
+            "workflow_dispatch: RSS 上のフィルタ通過記事の先頭1件を図解キューに載せます（新規0件・processed は更新しません）。"
         )
     write_generate_queue(queue_for_generate)
 

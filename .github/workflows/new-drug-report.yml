@@ -8,6 +8,8 @@
 #       INFOGRAPHIC_ATTACH=0 と併用すると添付なし・本文リンクのみ。
 # 任意: 図解生成 — PMDA_IF_FETCH_DISABLED=1 で GeneralList/PDF 取得と章抜粋をスキップ（検索のみ試す場合など）。
 #       PMDA_IF_HTTP_TIMEOUT / PMDA_IF_MAX_PDF_BYTES / PMDA_IF_MAX_SECTION_CHARS も調整可。
+# 任意: 発売記事フィルタ — HATSUBAI_REQUIRE_SUBSTRING（空で従来の「発売」のみ）、HATSUBAI_BASE_SUBSTRING、
+#       HATSUBAI_EXCLUDE_SUBSTRINGS（カンマ区切り）。スクリプト既定は「を発売」必須＋発売予定系除外。
 # 通知: 定期実行は「コミットがあったとき」のみ。手動（workflow_dispatch）はその時点の内容を送るため常に試行する。
 name: Mix Online 発売記事レポート
 
@@ -18,7 +20,7 @@ on:
   workflow_dispatch:
     inputs:
       queue_infographic_without_new:
-        description: "新規0件でもRSSの「発売」先頭1件で図解HTMLを試行する（既定オン）"
+        description: "新規0件でもRSSの実発売フィルタ通過の先頭1件で図解HTMLを試行する（既定オン）"
         type: boolean
         default: true
 
@@ -52,7 +54,10 @@ jobs:
         run: python scripts/fetch_and_report.py
         env:
           RSS_URL: https://www.mixonline.jp/DesktopModules/MixOnline_Rss/MixOnlinerss.aspx?rssmode=3
-          # メール/Slack に載せる「発売」記事の直近件数（既定 5）
+          # 実発売寄せ: タイトルに「を発売」を含むもののみ（空にすると「発売」のみ＋除外）
+          HATSUBAI_REQUIRE_SUBSTRING: "を発売"
+          HATSUBAI_EXCLUDE_SUBSTRINGS: "発売予定,発売を予定"
+          # メール/Slack に載せる記事の直近件数（既定 5）
           EMAIL_TOP_N: "5"
           # 手動実行時: 新規0でも先頭1件を図解キューへ（スケジュールでは常に false 扱い）
           DISPATCH_QUEUE_INFOGRAPHIC_WITHOUT_NEW: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.queue_infographic_without_new || false }}
