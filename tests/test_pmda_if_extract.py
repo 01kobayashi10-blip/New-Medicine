@@ -93,6 +93,18 @@ class TestSummarizeCards(unittest.TestCase):
         self.assertIn("抗悪性", r["card_yakka"])
         self.assertIn("乳癌", r["card_efficacy"])
 
+    def test_generic_from_glued_section3_one_line(self) -> None:
+        """PDF 抽出で 3.1 組成〜添加剤が 1 行に潰れる場合でも一般名を拾う。"""
+        sec3 = (
+            "3.1 組成 販売名 ツカイザ錠50mg ツカイザ錠150mg "
+            "有効成分 1錠中 ツカチニブ エタノール付加物52.4mg "
+            "(ツカチニブとして50mg) 1錠中 ツカチニブ エタノール付加物157.2mg "
+            "(ツカチニブとして150mg) 添加剤 コポビドン 3.2 製剤の性状 販売名"
+        )
+        g = pmda_if_extract._generic_from_section3(sec3)
+        self.assertIn("ツカチニブ", g)
+        self.assertIn("エタノール付加物", g)
+
 
 class TestSplitIfSections(unittest.TestCase):
     def test_strips_leading_page_noise_before_ident(self) -> None:

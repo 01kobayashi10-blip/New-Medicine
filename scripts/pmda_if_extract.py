@@ -397,6 +397,43 @@ def _generic_from_ident(ident: str) -> str:
     return ""
 
 
+def _composition_after_yuko(s: str) -> str:
+    """「有効成分」以降〜添加剤／3.2 製剤の性状 手前まで（1行に潰れた PDF 用）。"""
+    m = re.search(r"有効成分", s)
+    if not m:
+        return ""
+    tail = s[m.end() :]
+    end_m = re.search(r"\s+(?:添加剤|3[\.．]2\s|製剤の性状)", tail)
+    frag = tail[: end_m.start()] if end_m else tail
+    return frag.strip()
+
+
+def _generic_from_composition_fragment(frag: str) -> str:
+    """組成小節テキストから一般名候補（和文・付加物／水和物等で終わる語）を拾う。"""
+    f = _nfkc(frag or "").strip()
+    if not f:
+        return ""
+    # 「1錠中 ツカチニブ エタノール付加物52.4mg」等（付加物の「付」は漢字）
+    _w = r"[\u3040-\u309f\u30a0-\u30ff\u3400-\u9fff]"
+    pat = re.compile(
+        rf"(?:^|\s)({_w}+(?:\s+{_w}+){{0,4}}"
+        r"(?:エタノール付加物|水和物|塩酸塩|硫酸塩|酒石酸塩|マレイン酸塩|メシル酸塩|付加物))"
+        r"(?=\s|\(|$|\d)",
+        re.MULTILINE,
+    )
+    skip_in = ("として", "mg", "μg", "mL", "mｇ", "販売名", "錠中", "注射液", "外形", "識別")
+    for m in pat.finditer(f):
+        g = m.group(1).strip()
+        g = re.sub(r"(?:\s*\()?[\d.]+\s*m[gｇ]\)?\s*$", "", g, flags=re.I).strip()
+        if any(x in g for x in skip_in):
+            continue
+        if re.match(r"^[0-9０-９]", g):
+            continue
+        if 4 <= len(g) <= 90:
+            return g[:90]
+    return ""
+
+
 def _generic_from_section3(sec3: str) -> str:
     s = _nfkc(sec3 or "")
     if not s:
@@ -413,15 +450,24 @@ def _generic_from_section3(sec3: str) -> str:
             g = m.group(1).strip()
             if 2 <= len(g) <= 90:
                 return g
+    comp = _composition_after_yuko(s)
+    if comp:
+        g = _generic_from_composition_fragment(comp)
+        if g:
+            return g
     lines = [ln.strip() for ln in s.split("\n") if ln.strip()]
     for ln in lines:
-        if re.match(r"^3[\.．]1", ln):
+        # 見出しのみの短い行はスキップ。1 行に 3.1〜添加剤まで潰れている場合はスキップしない
+        if re.match(r"^3[\.．]1", ln) and len(ln) <= 48:
             continue
-        if any(x in ln for x in ("添加剤", "製剤の性状", "性状", "3.2")):
+        if re.match(r"^添加剤", ln) or re.match(r"^3[\.．]2", ln) or re.match(r"^製剤の性状", ln):
             break
-        if 6 <= len(ln) <= 85 and re.search(r"(水和物|塩酸塩|塩|付加物|錠|注射液|エタノール)", ln):
-            if not re.match(r"^3[\.．]", ln):
-                return ln[:90]
+        if 6 <= len(ln) <= 85 and re.search(r"(水和物|塩酸塩|硫酸塩|付加物|錠|注射液|エタノール)", ln):
+            if re.match(r"^3[\.．]", ln):
+                continue
+            if "販売名" in ln or re.match(r"^[0-9０-９]", ln):
+                continue
+            return ln[:90]
     return ""
 
 
