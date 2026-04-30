@@ -142,6 +142,35 @@ class TestStructureSection17(unittest.TestCase):
         t1 = d["trials"][1]
         fr1 = t1.get("efficacy_fragments") or []
         self.assertIn("35.4", [x["t"] for x in fr1 if x.get("em")])
+        self.assertNotIn("17.1.1", t0.get("heading_display", ""))
+        self.assertIn("HER2CLIMB", t0.get("heading_display", ""))
+        self.assertEqual("無増悪生存期間の中央値", t0.get("primary_endpoint_label", ""))
+        self.assertEqual("奏効率", t1.get("primary_endpoint_label", ""))
+
+    def test_sec17_colon_ci_in_result(self) -> None:
+        result = (
+            "主要評価項目である無増悪生存期間の中央値は本剤群で7.8ヵ月、対照群で5.6ヵ月であり、"
+            "ハザード比は0.54(95%信頼区間:0.42,0.71、層別ログランク検定p<0.00001、有意水準（両側)0.05)で、"
+            "本剤群で統計学的に有意な延長が認められた。"
+        )
+        fr = pmda_if_extract._efficacy_fragments_from_sec17(result)
+        em = [x["t"] for x in fr if x.get("em")]
+        self.assertIn("0.54", em)
+        self.assertIn("0.42", em)
+        self.assertIn("0.71", em)
+
+    def test_sec17_design_two_sentences_pop_prot(self) -> None:
+        sec17 = """17.1.1 海外第II相試験[HER2CLIMB(ONT-380-206)試験]
+患者612例を対象として登録した。二重盲検で本剤群と対照群に割り付けた。
+主要評価項目である無増悪生存期間の中央値は本剤群で7.8ヵ月、対照群で5.6ヵ月であった。
+副作用は下痢であった。
+"""
+        d = pmda_if_extract.structure_section17_trials(sec17)
+        self.assertIsNotNone(d)
+        assert d is not None
+        t0 = d["trials"][0]
+        self.assertIn("612", t0.get("population_line", ""))
+        self.assertIn("二重盲検", t0.get("protocol_line", ""))
 
 
 class TestStructureSection18(unittest.TestCase):

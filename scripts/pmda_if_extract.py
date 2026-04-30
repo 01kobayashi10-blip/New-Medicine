@@ -584,12 +584,72 @@ def _split_sec17_trial_paragraphs(rest: str) -> tuple[str, str, str]:
     )
 
 
+def _trial_heading_display(heading: str) -> str:
+    """見出しから 17.1.x 番号を除いた表示用タイトル。"""
+    h = re.sub(r"\s+", " ", (heading or "").strip())
+    return re.sub(r"^17[\.．]1[\.．]\d+\s+", "", h).strip()
+
+
+def _split_design_population_protocol(
+    design: str, *, pop_max: int = 420, prot_max: int = 480
+) -> tuple[str, str]:
+    """design 全文を対象患者向け・試験デザイン向けの2行に分割（ヒューリスティック）。"""
+    t = (design or "").strip()
+    if not t:
+        return "", ""
+    parts = [p.strip() for p in re.split(r"(?<=[。．])\s*", t) if p.strip()]
+    if len(parts) >= 2:
+        return _clip_moa_body(parts[0], pop_max), _clip_moa_body(" ".join(parts[1:]), prot_max)
+    cut = -1
+    key_full = "\u8a66\u9a13\u3092\u5b9f\u65bd\u3057\u305f"  # 試験を実施した
+    key_short = "\u8a66\u9a13\u3092\u5b9f\u65bd"  # 試験を実施
+    if key_full in t:
+        cut = t.find(key_full) + len(key_full)
+    elif key_short in t:
+        cut = t.find(key_short) + len(key_short)
+    if cut != -1 and cut < len(t) - 25:
+        first = t[:cut].strip().rstrip("\u3002\uff0e")
+        rest = t[cut:].strip().lstrip("\u3002\uff0e ")
+        if len(rest) > 25:
+            return _clip_moa_body(first, pop_max), _clip_moa_body(rest, prot_max)
+    return _clip_moa_body(t, pop_max), ""
+
+
+def _primary_endpoint_label_from_sec17(result: str) -> str:
+    """主要評価項目の短いラベル（添付文書に近い語）。"""
+    s = (result or "").strip()
+    if not s:
+        return ""
+    m = re.search(
+        r"(無増悪生存期間の中央値|無進行生存期間の中央値|総生存期間の中央値|全生存期間の中央値)",
+        s,
+    )
+    if m:
+        return m.group(1)
+    m2 = re.search(r"主要評価項目である[^。]{0,220}?((?:独立中央判定の評価に基づく)?奏効率)(?:は|を)", s)
+    if m2:
+        return m2.group(1).strip()[:80]
+    m3 = re.search(r"主要評価項目である.*?(奏効率)(?:は|を)", s)
+    if m3:
+        return m3.group(1)
+    return ""
+
+
+def _labeled_fields_from_sec17(design_full: str, result_full: str) -> dict[str, str]:
+    pop, prot = _split_design_population_protocol(design_full)
+    return {
+        "population_line": pop,
+        "protocol_line": prot,
+        "primary_endpoint_label": _primary_endpoint_label_from_sec17(result_full),
+    }
+
+
 def _design_lines_from_sec17(design: str, *, max_lines: int = 4, line_max: int = 220) -> list[str]:
     """試験概要を短文行に分割（句点・接続詞で区切る）。"""
     t = (design or "").strip()
     if not t:
         return []
-    parts = re.split(r"(?<=[。．])\s+", t)
+    parts = [p.strip() for p in re.split(r"(?<=[。．])\s*", t) if p.strip()]
     lines: list[str] = []
     for p in parts:
         p = p.strip()
@@ -614,10 +674,10 @@ def _efficacy_fragments_from_sec17(result: str) -> list[dict[str, Any]]:
     if not s:
         return []
 
-    # PFS / OS 等: 中央値 本剤群 X 月 / 対照群 Y 月
+    # PFS / OS 等: 中央値 本剤群 X 月 / 対照群 Y 月（「本剤群320例」等は非貪欲マッチで回避）
     m_pfs = re.search(
-        r"(主要評価項目である[^。]{0,140}?)(本剤群で|本剤群)([\d.]+)\s*ヵ?\s*月\s*([、,])\s*"
-        r"(対照群で|対照群)([\d.]+)\s*ヵ?\s*月\s*(であった|となった|等)",
+        r"(主要評価項目である.*?)(本剤群で|本剤群)([\d.]+)\s*ヵ?\s*月\s*([、,])\s*"
+        r"(対照群で|対照群)([\d.]+)\s*ヵ?\s*月\s*(であった|となった|であり、|等)",
         s,
     )
     if m_pfs:
@@ -645,6 +705,12 @@ def _efficacy_fragments_from_sec17(result: str) -> list[dict[str, Any]]:
                 r"ハザード比[はが]?\s*([\d.]+)\s*[（(]\s*95\s*%[^）)]*信頼区間[^）)]*[（(]\s*([\d.]+)\s*[,，、～〜\-]+\s*([\d.]+)\s*[）)]",
                 tail,
             )
+        if not m_hr:
+            m_hr = re.search(
+                r"ハザード比[はが]?\s*([\d.]+)\s*[（(]\s*95\s*[%％]\s*信頼区間\s*[:：]\s*"
+                r"([\d.]+)\s*[,，、]\s*([\d.]+)\s*(?:[）)]|[、,])",
+                tail,
+            )
         if m_hr:
             fr.append({"t": " ハザード比 ", "em": False})
             fr.append({"t": m_hr.group(1), "em": True})
@@ -654,7 +720,10 @@ def _efficacy_fragments_from_sec17(result: str) -> list[dict[str, Any]]:
             fr.append({"t": m_hr.group(3), "em": True})
             fr.append({"t": "）", "em": False})
             tail = tail[m_hr.end() :]
-        m_p = re.search(r"p\s*[<＜]\s*([\d.]+)|p\s*値\s*は\s*([\d.]+)\s*未満", tail)
+        m_p = re.search(
+            r"(?:層別ログランク検定\s*)?p\s*[<＜]\s*([\d.]+)|p\s*値\s*は\s*([\d.]+)\s*未満",
+            tail,
+        )
         if m_p:
             pv = m_p.group(1) or m_p.group(2)
             fr.append({"t": "、", "em": False})
@@ -666,7 +735,7 @@ def _efficacy_fragments_from_sec17(result: str) -> list[dict[str, Any]]:
 
     # 奏効率など
     m_orr = re.search(
-        r"(主要評価項目である[^。]{0,140}?奏効率は)([\d.]+)\s*[%％]\s*(であった|となった|で)",
+        r"(主要評価項目である.*?奏効率は)([\d.]+)\s*[%％]\s*(であった|となった|で)",
         s,
     )
     if m_orr:
@@ -722,11 +791,13 @@ def _enrich_sec17_trial_dict(
     design_full: str, result_full: str, ae_full: str
 ) -> dict[str, Any]:
     """図解用の構造化フィールド。"""
-    return {
+    out: dict[str, Any] = {
         "design_lines": _design_lines_from_sec17(design_full),
         "efficacy_fragments": _efficacy_fragments_from_sec17(result_full),
         "ae_items": _ae_items_from_sec17(ae_full),
     }
+    out.update(_labeled_fields_from_sec17(design_full, result_full))
+    return out
 
 
 def structure_section17_trials(sec17: str) -> dict[str, Any] | None:
@@ -768,6 +839,7 @@ def structure_section17_trials(sec17: str) -> dict[str, Any] | None:
         )
         row: dict[str, Any] = {
             "heading": heading,
+            "heading_display": _trial_heading_display(heading),
             "design": design,
             "result": result,
             "ae_note": ae_note,
