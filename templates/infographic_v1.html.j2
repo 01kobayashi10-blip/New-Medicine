@@ -491,7 +491,7 @@
     <div class="page-header-inner">
       <p class="page-header-kicker">ミクス発売記事ベース・PMDA添付文書抜粋（自動生成）</p>
       <h1>{{ title_display }}</h1>
-      <p class="page-header-sub">薬効薬理（18）・臨床成績（17）・副作用（11）・用法・相互作用（6・7・10）</p>
+      <p class="page-header-sub">作用機序・臨床成績・副作用・用法・相互作用</p>
     </div>
   </header>
 
@@ -578,10 +578,6 @@
         臨床成績
       </h2>
       {% if pharma17 %}
-      <p class="subhead-hint">17.1.x の試験見出しでブロック分割し、試験概要・主要評価・副作用の記述を分けて表示しています。数値の解釈は添付文書 PDF で確認してください。</p>
-      {% if pharma17.lead %}
-      <p class="trial-lead">{{ pharma17.lead }}</p>
-      {% endif %}
       <div class="trial-stack">
         {% for t in pharma17.trials %}
         <article class="trial-card">
