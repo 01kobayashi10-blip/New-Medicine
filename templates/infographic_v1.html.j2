@@ -596,12 +596,7 @@
     </section>
 
     <section class="section-block">
-      <h2 class="section-title">
-        <span class="badge">11</span>
-        副作用
-      </h2>
       {% if pharma11 %}
-      <p class="subhead-hint">「11.1 重大な副作用」「11.2 その他の副作用」から自動で要約しています。詳細は添付文書 PDF を参照してください。</p>
       <div class="ae2-panel-title">
         <span class="ae2-panel-num">4</span>
         {{ pharma11.panel_title }}
@@ -632,11 +627,11 @@
         </div>
       </div>
       <p class="ae2-source">出典：添付文書「11. 副作用」</p>
-      <details class="card" style="margin-top:1rem;">
-        <summary style="cursor:pointer;font-size:0.8rem;font-weight:600;color:var(--slate-600);padding:0.35rem 0;">11章 抜粋全文を表示</summary>
-        <div class="card-body" style="margin-top:0.5rem;">{{ section_11 or "—" }}</div>
-      </details>
       {% else %}
+      <h2 class="section-title">
+        <span class="badge">11</span>
+        副作用
+      </h2>
       <div class="card">
         <div class="card-body">{{ section_11 or "—" }}</div>
       </div>
