@@ -1072,16 +1072,24 @@ def _dosage_sec6_body_from_merged(merged: str) -> str:
     """
     章6本文（見出し直後〜「7. 用法及び用量に関連」手前まで）。
     PDF 由来で「7.」が行頭でない場合も拾う（^ 依存の正規表現では落ちるため）。
+    抜粋が「6. 用法及び用量」行より後ろから始まる場合（章境界で見出しが落ちる）は、
+    全文先頭〜「7. 用法及び用量に関連」手前を章6相当として扱う。
     """
     m = re.search(r"6\s*\.\s*用法及び用量", merged)
-    if not m:
-        return ""
-    tail = merged[m.end() :]
-    j = re.search(r"7\s*\.\s*用法及び用量に関連", tail)
-    body = tail[: j.start()].strip() if j else tail.strip()
-    if body.startswith("用法及び用量"):
-        body = re.sub(r"^用法及び用量\s*", "", body).strip()
-    return body
+    if m:
+        tail = merged[m.end() :]
+        j = re.search(r"7\s*\.\s*用法及び用量に関連", tail)
+        body = tail[: j.start()].strip() if j else tail.strip()
+        if body.startswith("用法及び用量"):
+            body = re.sub(r"^用法及び用量\s*", "", body).strip()
+        return body
+    jonly = re.search(r"7\s*\.\s*用法及び用量に関連", merged)
+    if jonly and jonly.start() > 0:
+        return merged[: jonly.start()].strip()
+    m71 = re.search(r"7\s*\.\s*1\s+", merged)
+    if m71 and m71.start() > 0:
+        return merged[: m71.start()].strip()
+    return merged.strip()
 
 
 def _dosage_standard_bullet(sec6_body: str) -> str | None:

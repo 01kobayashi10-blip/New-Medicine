@@ -411,6 +411,23 @@ y
         self.assertIsNotNone(r)
         self.assertTrue(any("300mg" in b for b in r["bullets"]))
 
+    def test_sec6_heading_missing_excerpt_starts_with_body(self) -> None:
+        """PDF 境界で「6. 用法及び用量」が抜粋に含まれず本文から始まる場合。"""
+        raw = """
+トラスツズマブ(遺伝子組換え)及びカペシタビンとの併用において、通常、成人にはツカチニブとして1回300mgを1日2回経口投与する。なお、患者の状態により適宜減量する。
+
+7. 用法及び用量に関連する注意
+7.1 本剤単独投与での有効性及び安全性は確立していない。
+7.2 重度の肝機能障害(Child-Pugh分類C)のある患者では、本剤の開始用量は1回200mgを1日2回とすること。
+
+10. 相互作用
+10.1 x
+y
+"""
+        r = pmda_if_extract.structure_dosage_memo(raw)
+        self.assertIsNotNone(r)
+        self.assertTrue(any("300mg" in b and "ツカチニブ" in b for b in r["bullets"]))
+
 
 if __name__ == "__main__":
     unittest.main()
