@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import calendar
 import html
 import json
 import os
@@ -11,6 +12,7 @@ import sys
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from urllib.parse import urlparse, urljoin
 
@@ -91,6 +93,33 @@ def load_feed_urls() -> list[str]:
     if single:
         return [single]
     return [u.strip() for u in DEFAULT_RSS_FEED_URLS.split(",") if u.strip()]
+
+
+def entry_published_unix(entry: feedparser.FeedParserDict) -> float:
+    """RSS 項目の並び替え用タイムスタンプ（大きいほど新しい）。欠損時は 0。"""
+    t = entry.get("published_parsed") or entry.get("updated_parsed")
+    if t:
+        try:
+            return float(calendar.timegm(t))
+        except (TypeError, ValueError):
+            pass
+    for key in ("published", "updated"):
+        s = (entry.get(key) or "").strip()
+        if not s:
+            continue
+        try:
+            return parsedate_to_datetime(s).timestamp()
+        except (TypeError, ValueError):
+            continue
+    return 0.0
+
+
+def sort_entries_by_published_desc(entries: list[feedparser.FeedParserDict]) -> None:
+    """公開日時の降順（同一時刻は安定のため stable_id で二次ソート）。"""
+    entries.sort(
+        key=lambda e: (entry_published_unix(e), stable_id(e)),
+        reverse=True,
+    )
 
 
 def merge_rss_entries(urls: list[str]) -> tuple[list[feedparser.FeedParserDict], int]:
@@ -304,6 +333,8 @@ def main() -> int:
             sid = stable_id(entry)
             if sid:
                 matched.append(entry)
+
+    sort_entries_by_published_desc(matched)
 
     processed = load_processed()
     new_entries = [e for e in matched if stable_id(e) not in processed]
