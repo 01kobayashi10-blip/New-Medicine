@@ -211,8 +211,15 @@
     }
 
     .moa-wrap { margin-top: 0.25rem; }
+    .moa-lead-label {
+      margin: 0 0 0.45rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--slate-500);
+    }
     .moa-intro {
-      margin: 0 0 1.15rem;
+      margin: 0 0 0.75rem;
       padding: 1rem 1.15rem;
       font-size: 0.92rem;
       line-height: 1.75;
@@ -220,50 +227,6 @@
       background: linear-gradient(180deg, #f8fafc 0%, #fff 40%);
       border: 1px solid var(--slate-200);
       border-radius: 0.85rem;
-    }
-    .moa-grid {
-      display: grid;
-      gap: 1rem;
-      margin: 0 0 0.85rem;
-      grid-template-columns: 1fr;
-    }
-    @media (min-width: 720px) {
-      .moa-grid { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-    }
-    .moa-card {
-      margin: 0;
-      padding: 1rem 1.1rem;
-      background: var(--white);
-      border: 1px solid var(--slate-200);
-      border-radius: 0.95rem;
-      box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
-    }
-    .moa-card--accent {
-      border-width: 2px;
-      border-color: #7dd3fc;
-      background: linear-gradient(145deg, #f0f9ff 0%, #fff 55%, #e0f2fe 100%);
-      box-shadow: 0 2px 8px rgb(3 105 161 / 0.08);
-    }
-    .moa-kicker {
-      margin: 0 0 0.35rem;
-      font-size: 0.65rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--slate-500);
-    }
-    .moa-card-title {
-      margin: 0 0 0.5rem;
-      font-size: 1.05rem;
-      font-weight: 700;
-      line-height: 1.35;
-      color: var(--brand-dark);
-    }
-    .moa-card-body {
-      margin: 0;
-      font-size: 0.84rem;
-      line-height: 1.65;
-      color: var(--slate-800);
     }
     .moa-source {
       margin: 0.35rem 0 0;
@@ -299,7 +262,7 @@
     <p class="disclaimer">候補 1 件・強一致。添付文書 PDF から章を自動抜粋しました（文字数上限あり）。診療・服薬の判断は必ず最新の添付文書および医療者の指示に従ってください。</p>
 
     <div class="meta-panel">
-      <p><span class="meta-label">生成</span>2026-04-30T03:34:45Z / <span class="meta-label">stable_id</span> <code>https://www.mixonline.jp/tabid55.html?artid=80111</code></p>
+      <p><span class="meta-label">生成</span>2026-04-30T05:14:46Z / <span class="meta-label">stable_id</span> <code>https://www.mixonline.jp/tabid55.html?artid=80111</code></p>
       <p><span class="meta-label">ミクス</span><a href="https://www.mixonline.jp/tabid55.html?artid=80111" rel="noopener noreferrer">https://www.mixonline.jp/tabid55.html?artid=80111</a></p>
       
       <p><span class="meta-label">PMDA</span><a href="https://www.pmda.go.jp/PmdaSearch/iyakuDetail/GeneralList/4291098" rel="noopener noreferrer">https://www.pmda.go.jp/PmdaSearch/iyakuDetail/GeneralList/4291098</a></p>
@@ -350,24 +313,10 @@
         薬効薬理
       </h2>
       
-      <p class="subhead-hint">18.1 作用機序を冒頭にまとめ、該当する節（in vitro / in vivo 等）をカードに分割しています。全文は添付文書 PDF を参照してください。</p>
+      <p class="subhead-hint">18.1 作用機序（メインの作用）のみを表示しています。試験データ等の詳細は添付文書 PDF を参照してください。</p>
       <div class="moa-wrap">
+        <p class="moa-lead-label">18.1 作用機序</p>
         <p class="moa-intro">ツカチニブは、HER2のキナーゼ活性を阻害することにより、腫瘍の 増殖を抑制すると考えられている。</p>
-        <div class="moa-grid">
-          
-          <article class="moa-card">
-            <p class="moa-kicker">18.2.1</p>
-            <h3 class="moa-card-title">試験管内（in vitro）</h3>
-            <p class="moa-card-body">ツカチニブは、HER2陽性のヒト乳癌由来細胞株(BT-474細胞株等) に対して、増殖抑制作用を示した。</p>
-          </article>
-          
-          <article class="moa-card moa-card--accent">
-            <p class="moa-kicker">18.2.2</p>
-            <h3 class="moa-card-title">試験体内（in vivo）</h3>
-            <p class="moa-card-body">ツカチニブは、BT-474細胞株を皮下移植した重症複合型免疫不全マ ウスに対して、腫瘍増殖抑制作用を示した。また、ツカチニブ単独 及びトラスツズマブ単独と比較して、ツカチニブとトラスツズマブ との併用では腫瘍増殖抑制作用の増強が認められた。</p>
-          </article>
-          
-        </div>
         <p class="moa-source">出典：添付文書「18. 薬効薬理」</p>
       </div>
       
