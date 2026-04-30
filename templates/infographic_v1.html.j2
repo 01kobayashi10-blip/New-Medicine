@@ -291,12 +291,8 @@
         </div>
       </div>
       {% else %}
-      <p class="subhead-hint">カード用の自動要約（販売名・一般名等）が得られませんでした。下の抜粋と PDF を参照してください。</p>
+      <p class="subhead-hint">カード用の自動要約（販売名・一般名等）が得られませんでした。添付文書 PDF を参照してください。</p>
       {% endif %}
-      <h3 class="subsection-title">添付文書より（警告・禁忌・識別の抜粋）</h3>
-      <div class="card">
-        <div class="card-body">{{ ident_preview or section_ident or "（識別領域の自動抽出なし）" }}</div>
-      </div>
     </section>
 
     <section class="section-block">
