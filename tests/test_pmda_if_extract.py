@@ -130,6 +130,18 @@ class TestStructureSection17(unittest.TestCase):
         self.assertIn("7.8", d["trials"][0]["result"])
         self.assertIn("副作用", d["trials"][0]["ae_note"])
         self.assertIn("35.4", d["trials"][1]["result"])
+        # 図解用の構造化フィールド
+        t0 = d["trials"][0]
+        self.assertTrue(t0.get("design_lines"))
+        self.assertIn("612", t0["design_lines"][0])
+        fr0 = t0.get("efficacy_fragments") or []
+        em_vals = [x["t"] for x in fr0 if x.get("em")]
+        self.assertIn("7.8", em_vals)
+        self.assertIn("5.6", em_vals)
+        self.assertTrue(any("下痢" in x for x in (t0.get("ae_items") or [])))
+        t1 = d["trials"][1]
+        fr1 = t1.get("efficacy_fragments") or []
+        self.assertIn("35.4", [x["t"] for x in fr1 if x.get("em")])
 
 
 class TestStructureSection18(unittest.TestCase):

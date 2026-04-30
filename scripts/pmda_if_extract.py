@@ -545,15 +545,15 @@ def _trim_sec17_figure_noise(s: str) -> str:
     return s.strip()
 
 
-def _split_sec17_trial_paragraphs(rest: str) -> tuple[str, str, str]:
-    """試験ブロックを（デザイン概要・主要評価・副作用記述）に分割。"""
+def _split_sec17_trial_paragraphs_core(rest: str) -> tuple[str, str, str]:
+    """試験ブロックを（デザイン概要・主要評価・副作用）に分割。クリップ前の1行化テキスト。"""
     s = re.sub(r"\s+", " ", (rest or "").strip())
     if not s:
         return "", "", ""
     m_key = re.search(r"(主要評価項目)", s)
     if not m_key:
         mid = min(360, max(140, len(s) // 2))
-        return _clip_moa_body(s[:mid], 400), _clip_moa_body(s[mid:], 720), ""
+        return s[:mid].strip(), s[mid:].strip(), ""
     design = s[: m_key.start()].strip()
     tail = _trim_sec17_figure_noise(s[m_key.start() :])
     m_ae = re.search(
@@ -571,11 +571,162 @@ def _split_sec17_trial_paragraphs(rest: str) -> tuple[str, str, str]:
         ae_block = ""
     result = _soften_if_reference_markers(result)
     ae_block = _soften_if_reference_markers(ae_block)
+    return design, result, ae_block
+
+
+def _split_sec17_trial_paragraphs(rest: str) -> tuple[str, str, str]:
+    """試験ブロックを（デザイン概要・主要評価・副作用記述）に分割（表示用にクリップ）。"""
+    design, result, ae_block = _split_sec17_trial_paragraphs_core(rest)
     return (
         _clip_moa_body(design, 480),
         _clip_moa_body(result, 720),
         _clip_moa_body(ae_block, 520),
     )
+
+
+def _design_lines_from_sec17(design: str, *, max_lines: int = 4, line_max: int = 220) -> list[str]:
+    """試験概要を短文行に分割（句点・接続詞で区切る）。"""
+    t = (design or "").strip()
+    if not t:
+        return []
+    parts = re.split(r"(?<=[。．])\s+", t)
+    lines: list[str] = []
+    for p in parts:
+        p = p.strip()
+        if len(p) < 8:
+            continue
+        if len(p) > line_max:
+            p = p[: line_max - 1].rstrip() + "…"
+        lines.append(p)
+        if len(lines) >= max_lines:
+            break
+    if not lines and t:
+        lines.append(t[:line_max] + ("…" if len(t) > line_max else ""))
+    return lines
+
+
+def _efficacy_fragments_from_sec17(result: str) -> list[dict[str, Any]]:
+    """
+    主要評価テキストを表示用フラグメント列に変換（数値を em=True）。
+    該当パターンが無い場合は全文を1フラグメント（em=False）で返す。
+    """
+    s = (result or "").strip()
+    if not s:
+        return []
+
+    # PFS / OS 等: 中央値 本剤群 X 月 / 対照群 Y 月
+    m_pfs = re.search(
+        r"(主要評価項目である[^。]{0,140}?)(本剤群で|本剤群)([\d.]+)\s*ヵ?\s*月\s*([、,])\s*"
+        r"(対照群で|対照群)([\d.]+)\s*ヵ?\s*月\s*(であった|となった|等)",
+        s,
+    )
+    if m_pfs:
+        fr: list[dict[str, Any]] = [
+            {"t": m_pfs.group(1), "em": False},
+            {"t": m_pfs.group(2), "em": False},
+            {"t": m_pfs.group(3), "em": True},
+            {"t": "ヵ月", "em": False},
+            {"t": m_pfs.group(4), "em": False},
+            {"t": m_pfs.group(5), "em": False},
+            {"t": m_pfs.group(6), "em": True},
+            {"t": "ヵ月", "em": False},
+            {"t": m_pfs.group(7), "em": False},
+        ]
+        tail = s[m_pfs.end() :].lstrip()
+        if tail.startswith("。"):
+            tail = tail[1:].lstrip()
+        # ハザード比・95%CI・p
+        m_hr = re.search(
+            r"ハザード比[はが]?\s*([\d.]+)\s*（\s*95\s*％\s*信頼区間[^（]*（\s*([\d.]+)\s*[,，、～〜\-]+\s*([\d.]+)\s*）\s*）",
+            tail,
+        )
+        if not m_hr:
+            m_hr = re.search(
+                r"ハザード比[はが]?\s*([\d.]+)\s*[（(]\s*95\s*%[^）)]*信頼区間[^）)]*[（(]\s*([\d.]+)\s*[,，、～〜\-]+\s*([\d.]+)\s*[）)]",
+                tail,
+            )
+        if m_hr:
+            fr.append({"t": " ハザード比 ", "em": False})
+            fr.append({"t": m_hr.group(1), "em": True})
+            fr.append({"t": "（95% CI ", "em": False})
+            fr.append({"t": m_hr.group(2), "em": True})
+            fr.append({"t": "–", "em": False})
+            fr.append({"t": m_hr.group(3), "em": True})
+            fr.append({"t": "）", "em": False})
+            tail = tail[m_hr.end() :]
+        m_p = re.search(r"p\s*[<＜]\s*([\d.]+)|p\s*値\s*は\s*([\d.]+)\s*未満", tail)
+        if m_p:
+            pv = m_p.group(1) or m_p.group(2)
+            fr.append({"t": "、", "em": False})
+            if m_p.group(1):
+                fr.append({"t": f"p < {pv}", "em": True})
+            else:
+                fr.append({"t": f"p値 < {pv}", "em": True})
+        return fr
+
+    # 奏効率など
+    m_orr = re.search(
+        r"(主要評価項目である[^。]{0,140}?奏効率は)([\d.]+)\s*[%％]\s*(であった|となった|で)",
+        s,
+    )
+    if m_orr:
+        fr2: list[dict[str, Any]] = [
+            {"t": m_orr.group(1), "em": False},
+            {"t": m_orr.group(2), "em": True},
+            {"t": "%", "em": False},
+            {"t": m_orr.group(3), "em": False},
+        ]
+        tail2 = s[m_orr.end() :]
+        m_ci = re.search(
+            r"\s*（\s*(90|95)\s*[%％]\s*信頼区間[^（]*（\s*([\d.]+)\s*[,，、～〜\-]+\s*([\d.]+)\s*）\s*）",
+            tail2,
+        )
+        if m_ci:
+            fr2.append({"t": "（", "em": False})
+            fr2.append({"t": m_ci.group(1), "em": True})
+            fr2.append({"t": "% CI ", "em": False})
+            fr2.append({"t": m_ci.group(2), "em": True})
+            fr2.append({"t": "–", "em": False})
+            fr2.append({"t": m_ci.group(3), "em": True})
+            fr2.append({"t": "）", "em": False})
+        return fr2
+
+    return [{"t": _clip_moa_body(s, 900), "em": False}]
+
+
+def _ae_items_from_sec17(ae_block: str, *, max_items: int = 8) -> list[str]:
+    """副作用ブロックから「名称（x.x%）」形式を抽出。"""
+    t = (ae_block or "").strip()
+    if not t:
+        return []
+    items: list[str] = []
+    for m in re.finditer(
+        r"([\u3040-\u30ff\u4e00-\u9fff]{1,14}?)\s*[（(]\s*([\d.]+\s*%)\s*[）)]",
+        t,
+    ):
+        name, pct = m.group(1).strip(), m.group(2).strip()
+        if len(name) >= 2:
+            items.append(f"{name}（{pct}）")
+        if len(items) >= max_items:
+            break
+    if items:
+        return items
+    # フォールバック: 「主な副作用は〜」の直後の短い語
+    m = re.search(r"主な副作用は([^、。]{2,14})であった", t)
+    if m:
+        return [m.group(1).strip()]
+    return []
+
+
+def _enrich_sec17_trial_dict(
+    design_full: str, result_full: str, ae_full: str
+) -> dict[str, Any]:
+    """図解用の構造化フィールド。"""
+    return {
+        "design_lines": _design_lines_from_sec17(design_full),
+        "efficacy_fragments": _efficacy_fragments_from_sec17(result_full),
+        "ae_items": _ae_items_from_sec17(ae_full),
+    }
 
 
 def structure_section17_trials(sec17: str) -> dict[str, Any] | None:
@@ -591,7 +742,7 @@ def structure_section17_trials(sec17: str) -> dict[str, Any] | None:
         return None
     chunks = re.split(r"(?=17[\.．]1[\.．]\d+\s)", t)
     lead = ""
-    trials: list[dict[str, str]] = []
+    trials: list[dict[str, Any]] = []
     for block in chunks:
         b = block.strip()
         if not b:
@@ -609,15 +760,20 @@ def structure_section17_trials(sec17: str) -> dict[str, Any] | None:
         rest = b[m_ln.end() :].strip()
         if len(rest) < 18:
             continue
-        design, result, ae_note = _split_sec17_trial_paragraphs(rest)
-        trials.append(
-            {
-                "heading": heading,
-                "design": design,
-                "result": result,
-                "ae_note": ae_note,
-            }
+        design_f, result_f, ae_f = _split_sec17_trial_paragraphs_core(rest)
+        design, result, ae_note = (
+            _clip_moa_body(design_f, 480),
+            _clip_moa_body(result_f, 720),
+            _clip_moa_body(ae_f, 520),
         )
+        row: dict[str, Any] = {
+            "heading": heading,
+            "design": design,
+            "result": result,
+            "ae_note": ae_note,
+        }
+        row.update(_enrich_sec17_trial_dict(design_f, result_f, ae_f))
+        trials.append(row)
     if not trials:
         return None
     return {"lead": lead, "trials": trials}

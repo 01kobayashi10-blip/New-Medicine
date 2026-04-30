@@ -273,6 +273,14 @@
       line-height: 1.55;
       color: rgb(224 242 254 / 0.98);
     }
+    .trial-design-list {
+      margin: 0.55rem 0 0;
+      padding-left: 1.1rem;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      color: rgb(224 242 254 / 0.98);
+    }
+    .trial-design-list li { margin: 0.2rem 0; padding-left: 0.15rem; }
     .trial-card-body {
       margin: 0;
       padding: 1rem 1.05rem;
@@ -287,6 +295,23 @@
       color: var(--slate-800);
       font-weight: 500;
     }
+    .trial-result-structured {
+      font-weight: 400;
+      line-height: 1.75;
+    }
+    .trial-result-structured .trial-metric {
+      font-weight: 700;
+      color: #5b21b6;
+    }
+    .trial-ae-list {
+      margin: 0.75rem 0 0;
+      padding: 0.55rem 0 0 1.05rem;
+      border-top: 1px solid var(--slate-200);
+      font-size: 0.72rem;
+      line-height: 1.55;
+      color: var(--slate-500);
+    }
+    .trial-ae-list li { margin: 0.15rem 0; }
     .trial-ae {
       margin: 0.75rem 0 0;
       padding-top: 0.65rem;
@@ -415,11 +440,19 @@
         <article class="trial-card">
           <div class="trial-card-head">
             <p class="trial-heading">{{ t.heading }}</p>
-            {% if t.design %}<p class="trial-design">{{ t.design }}</p>{% endif %}
+            {% if t.design_lines and t.design_lines|length > 0 %}
+            <ul class="trial-design-list">
+              {% for line in t.design_lines %}<li>{{ line }}</li>{% endfor %}
+            </ul>
+            {% elif t.design %}<p class="trial-design">{{ t.design }}</p>{% endif %}
           </div>
           <div class="trial-card-body">
-            {% if t.result %}<p class="trial-result">{{ t.result }}</p>{% endif %}
-            {% if t.ae_note %}<p class="trial-ae">{{ t.ae_note }}</p>{% endif %}
+            {% if t.efficacy_fragments and (t.efficacy_fragments | map(attribute='em') | select | list | length > 0) %}
+            <p class="trial-result trial-result-structured">{% for f in t.efficacy_fragments %}{% if f.em %}<strong class="trial-metric">{{ f.t }}</strong>{% else %}<span class="trial-txt">{{ f.t }}</span>{% endif %}{% endfor %}</p>
+            {% elif t.result %}<p class="trial-result">{{ t.result }}</p>{% endif %}
+            {% if t.ae_items and t.ae_items|length > 0 %}
+            <ul class="trial-ae-list">{% for it in t.ae_items %}<li>{{ it }}</li>{% endfor %}</ul>
+            {% elif t.ae_note %}<p class="trial-ae">{{ t.ae_note }}</p>{% endif %}
           </div>
         </article>
         {% endfor %}
