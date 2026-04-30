@@ -230,7 +230,7 @@
     <div class="page-header-inner">
       <p class="page-header-kicker">ミクス発売記事ベース・PMDA添付文書抜粋（自動生成）</p>
       <h1>{{ title_display }}</h1>
-      <p class="page-header-sub">効能（4）・薬効薬理（18）・臨床成績（17）・副作用（11）・用法・相互作用（6・7・10）</p>
+      <p class="page-header-sub">薬効薬理（18）・臨床成績（17）・副作用（11）・用法・相互作用（6・7・10）</p>
     </div>
   </header>
 
@@ -293,16 +293,6 @@
       {% else %}
       <p class="subhead-hint">カード用の自動要約（販売名・一般名等）が得られませんでした。添付文書 PDF を参照してください。</p>
       {% endif %}
-    </section>
-
-    <section class="section-block">
-      <h2 class="section-title">
-        <span class="badge">4</span>
-        効能又は効果
-      </h2>
-      <div class="card">
-        <div class="card-body">{{ section_4 or "—" }}</div>
-      </div>
     </section>
 
     <section class="section-block">
