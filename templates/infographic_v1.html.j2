@@ -309,23 +309,44 @@
       color: rgb(224 242 254 / 0.98);
     }
     .trial-design-list li { margin: 0.2rem 0; padding-left: 0.15rem; }
-    .trial-kv {
-      margin: 0 0 0.9rem;
+    /* 臨床成績：対象患者／試験デザインを要約カード化（md以上で2列） */
+    .trial-summary-grid {
       display: grid;
-      grid-template-columns: 7.25rem 1fr;
-      gap: 0.4rem 0.75rem;
-      font-size: 0.82rem;
-      line-height: 1.55;
-      color: var(--slate-800);
+      gap: 0.75rem;
+      margin: 0 0 0.9rem;
     }
-    .trial-kv dt {
+    @media (min-width: 48rem) {
+      .trial-summary-grid--two {
+        grid-template-columns: 1fr 1fr;
+        align-items: stretch;
+      }
+      .trial-summary-grid--two .trial-summary-card--fullrow {
+        grid-column: 1 / -1;
+      }
+    }
+    .trial-summary-card {
       margin: 0;
-      font-weight: 600;
+      padding: 0.85rem 0.95rem;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      color: var(--slate-800);
+      word-break: break-word;
+      background: linear-gradient(180deg, #f8fafc 0%, #fff 45%);
+      border: 1px solid var(--slate-200);
+      border-radius: 0.65rem;
+    }
+    .trial-summary-card-label {
+      margin: 0 0 0.45rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
       color: var(--slate-600);
     }
-    .trial-kv dd {
+    .trial-summary-card-text {
       margin: 0;
-      word-break: break-word;
+      font-size: 0.82rem;
+      line-height: 1.65;
+      color: var(--slate-800);
     }
     .trial-result-label {
       margin: 0 0 0.4rem;
@@ -354,23 +375,6 @@
     .trial-result-structured .trial-metric {
       font-weight: 700;
       color: #5b21b6;
-    }
-    .trial-ae-list {
-      margin: 0.75rem 0 0;
-      padding: 0.55rem 0 0 1.05rem;
-      border-top: 1px solid var(--slate-200);
-      font-size: 0.72rem;
-      line-height: 1.55;
-      color: var(--slate-500);
-    }
-    .trial-ae-list li { margin: 0.15rem 0; }
-    .trial-ae {
-      margin: 0.75rem 0 0;
-      padding-top: 0.65rem;
-      border-top: 1px solid var(--slate-200);
-      font-size: 0.72rem;
-      line-height: 1.55;
-      color: var(--slate-500);
     }
 
     /* 主な副作用（2カラム要約） */
@@ -591,19 +595,31 @@
           </div>
           <div class="trial-card-body">
             {% if t.population_line or t.protocol_line or t.primary_endpoint_label %}
-            <dl class="trial-kv">
-              {% if t.population_line %}<dt>対象患者</dt><dd>{{ t.population_line }}</dd>{% endif %}
-              {% if t.protocol_line %}<dt>試験デザイン</dt><dd>{{ t.protocol_line }}</dd>{% endif %}
-              {% if t.primary_endpoint_label %}<dt>主要評価項目</dt><dd>{{ t.primary_endpoint_label }}</dd>{% endif %}
-            </dl>
+            <div class="trial-summary-grid{% if t.population_line and t.protocol_line %} trial-summary-grid--two{% endif %}">
+              {% if t.population_line %}
+              <div class="trial-summary-card">
+                <p class="trial-summary-card-label">対象患者</p>
+                <p class="trial-summary-card-text">{{ t.population_line }}</p>
+              </div>
+              {% endif %}
+              {% if t.protocol_line %}
+              <div class="trial-summary-card">
+                <p class="trial-summary-card-label">試験デザイン</p>
+                <p class="trial-summary-card-text">{{ t.protocol_line }}</p>
+              </div>
+              {% endif %}
+              {% if t.primary_endpoint_label %}
+              <div class="trial-summary-card trial-summary-card--fullrow">
+                <p class="trial-summary-card-label">主要評価項目</p>
+                <p class="trial-summary-card-text">{{ t.primary_endpoint_label }}</p>
+              </div>
+              {% endif %}
+            </div>
             {% endif %}
             {% if t.efficacy_fragments and (t.efficacy_fragments | map(attribute='em') | select | list | length > 0) %}
             <p class="trial-result-label">結果</p>
             <p class="trial-result trial-result-structured">{% for f in t.efficacy_fragments %}{% if f.em %}<strong class="trial-metric">{{ f.t }}</strong>{% else %}<span class="trial-txt">{{ f.t }}</span>{% endif %}{% endfor %}</p>
             {% elif t.result %}<p class="trial-result-label">結果</p><p class="trial-result">{{ t.result }}</p>{% endif %}
-            {% if t.ae_items and t.ae_items|length > 0 %}
-            <ul class="trial-ae-list">{% for it in t.ae_items %}<li>{{ it }}</li>{% endfor %}</ul>
-            {% elif t.ae_note %}<p class="trial-ae">{{ t.ae_note }}</p>{% endif %}
           </div>
         </article>
         {% endfor %}
