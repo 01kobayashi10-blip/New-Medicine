@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "comment": "rssmode=3 の30件窓から落ちた発売記事を補完。不要になった行は items から削除してください。",
+  "items": [
+    {
+      "title": "アッヴィ　片頭痛発作の発症抑制薬・アクイプタ錠を発売　ピーク時売上予想245億円",
+      "link": "https://www.mixonline.jp/tabid55.html?artid=80101",
+      "published": "Wed, 22 Apr 2026 04:49:00 +0900"
+    },
+    {
+      "title": "ファイザー　HER2陽性乳がん治療薬・ツカイザ錠を発売",
+      "link": "https://www.mixonline.jp/tabid55.html?artid=80111",
+      "published": "Wed, 22 Apr 2026 04:49:00 +0900"
+    }
+  ]
+}

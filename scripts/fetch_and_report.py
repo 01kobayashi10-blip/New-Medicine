@@ -7,6 +7,7 @@ import calendar
 import html
 import json
 import os
+import re
 import socket
 import sys
 import urllib.error
@@ -24,14 +25,24 @@ REPORT_PATH = ROOT / "reports" / "latest.html"
 NOTIFY_LATEST_PATH = ROOT / "reports" / "notify_latest.json"
 GENERATE_QUEUE_PATH = ROOT / "reports" / "generate_queue.json"
 
-# rssmode=3 は新薬寄りだが件数が少なく「発売」見出しがすぐ流れる。=1 と併用してカバーする。
-DEFAULT_RSS_FEED_URLS = (
-    "https://www.mixonline.jp/DesktopModules/MixOnline_Rss/MixOnlinerss.aspx?rssmode=3,"
-    "https://www.mixonline.jp/DesktopModules/MixOnline_Rss/MixOnlinerss.aspx?rssmode=1"
-)
+# rssmode=3 は新薬寄り（30件固定）。artid が窓から落ちた発売記事は data/rss_seed_items.json で補完する。
+# rssmode=1 は古い artid が混ざり再掲載のため既定から外した（必要なら RSS_FEED_URLS に追加）。
+DEFAULT_RSS_FEED_URLS = "https://www.mixonline.jp/DesktopModules/MixOnline_Rss/MixOnlinerss.aspx?rssmode=3"
 
 # RSS の link が / で始まる相対URLのとき、file:// で開いた HTML からも辿れるよう絶対化する基準
 LINK_BASE = "https://www.mixonline.jp/"
+
+
+def entry_artid(entry: feedparser.FeedParserDict) -> int:
+    """ミクス tabid55 の artid（なければ 0）。並び替えに使う。"""
+    link = canonical_item_id((entry.get("link") or "").strip())
+    m = re.search(r"[?&]artid=(\d+)", link, flags=re.I)
+    if m:
+        try:
+            return int(m.group(1))
+        except ValueError:
+            pass
+    return 0
 
 
 def _parse_exclude_substrings(raw: str) -> list[str]:
@@ -115,9 +126,9 @@ def entry_published_unix(entry: feedparser.FeedParserDict) -> float:
 
 
 def sort_entries_by_published_desc(entries: list[feedparser.FeedParserDict]) -> None:
-    """公開日時の降順（同一時刻は安定のため stable_id で二次ソート）。"""
+    """artid 降順を優先しつつ公開日時降順（RSS の pubDate が古い再掲に強い）。"""
     entries.sort(
-        key=lambda e: (entry_published_unix(e), stable_id(e)),
+        key=lambda e: (entry_artid(e), entry_published_unix(e), stable_id(e)),
         reverse=True,
     )
 
@@ -159,6 +170,57 @@ def stable_id(entry: feedparser.FeedParserDict) -> str:
     guid = (entry.get("id") or entry.get("guid") or "").strip()
     candidate = guid or (entry.get("link") or "").strip()
     return canonical_item_id(candidate) if candidate else ""
+
+
+def rss_seed_json_path() -> Path:
+    raw = os.environ.get("RSS_SEED_JSON_PATH", "").strip()
+    if raw:
+        p = Path(raw).expanduser()
+        return p if p.is_absolute() else ROOT / raw
+    return ROOT / "data" / "rss_seed_items.json"
+
+
+def load_rss_seed_entries(path: Path) -> list[feedparser.FeedParserDict]:
+    """RSS 窓外の発売記事を JSON で補完（items[].title / link / published 任意）。"""
+    if not path.is_file():
+        return []
+    with open(path, encoding="utf-8") as f:
+        data = json.load(f)
+    items = data.get("items")
+    if not isinstance(items, list):
+        return []
+    out: list[feedparser.FeedParserDict] = []
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+        title = (it.get("title") or "").strip()
+        link = canonical_item_id((it.get("link") or "").strip())
+        if not title or not link:
+            continue
+        e = feedparser.FeedParserDict()
+        e["title"] = title
+        e["link"] = link
+        pub = (it.get("published") or "").strip()
+        if pub:
+            e["published"] = pub
+        out.append(e)
+    return out
+
+
+def append_rss_seed_entries(
+    merged: list[feedparser.FeedParserDict],
+) -> list[feedparser.FeedParserDict]:
+    seeds = load_rss_seed_entries(rss_seed_json_path())
+    if not seeds:
+        return merged
+    seen = {stable_id(e) for e in merged}
+    out = list(merged)
+    for e in seeds:
+        sid = stable_id(e)
+        if sid and sid not in seen:
+            seen.add(sid)
+            out.append(e)
+    return out
 
 
 def fetch_feed(url: str, timeout: int = 30) -> bytes:
@@ -303,6 +365,9 @@ def main() -> int:
     urls = load_feed_urls()
     try:
         merged_entries, raw_entry_sum = merge_rss_entries(urls)
+        n_merged = len(merged_entries)
+        merged_entries = append_rss_seed_entries(merged_entries)
+        print(f"rss_seed_entries_added={len(merged_entries) - n_merged}")
     except ValueError as e:
         print(f"ERROR: {e}", file=sys.stderr)
         return 1
