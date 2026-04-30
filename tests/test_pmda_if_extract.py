@@ -196,6 +196,50 @@ class TestStructureSection18(unittest.TestCase):
         self.assertNotIn("BT-474", d["intro"])
 
 
+class TestStructureSection11(unittest.TestCase):
+    def test_summary_none_without_11_2(self) -> None:
+        s = (
+            "次の副作用があらわれることがあるので観察を十分に行い異常が認められた場合には投与を中止するなど適切な処置を行うこと。\n"
+            "11.1 重大な副作用\n"
+            "11.1.1 重度の下痢(10.6%)\n"
+            "[7.3参照]\n"
+        )
+        self.assertIsNone(pmda_if_extract.structure_section11_summary(s))
+
+    def test_two_column_like_snippet(self) -> None:
+        s = """
+次の副作用があらわれることがあるので、観察を十分に行い、異常が認められた場合には投与を中止するなど適切な処置を行うこと。
+
+11.1 重大な副作用
+
+11.1.1 重度の下痢(10.6%)
+[7.3参照]
+
+11.1.2 肝機能障害
+高ビリルビン血症(21.9%)、AST増加(20.0%)等を伴う肝機能障害があらわれることがある。[7.3参照]
+
+11.2 その他の副作用
+ 5%以上 1%以上~5%未満 1%未満
+
+代謝及び栄養障害
+食欲減退(20.9%)、低カリウム血症
+低血糖
+
+胃腸障害
+下痢(72.6%)、悪心(52.1%)、嘔吐(25.3%)
+"""
+        d = pmda_if_extract.structure_section11_summary(s)
+        self.assertIsNotNone(d)
+        assert d is not None
+        self.assertGreaterEqual(len(d["serious_items"]), 2)
+        self.assertEqual(d["serious_items"][0]["num"], "1")
+        self.assertIn("下痢", d["serious_items"][0]["heading"])
+        symptoms = [x["symptom"] for x in d["other_items"]]
+        self.assertTrue(any("72.6" in t for t in symptoms))
+        self.assertTrue(any(x["soc"] == "胃腸障害" for x in d["other_items"]))
+        self.assertIn("5%以上", d["other_title"])
+
+
 class TestSplitIfSections(unittest.TestCase):
     def test_strips_leading_page_noise_before_ident(self) -> None:
         text = """

@@ -531,6 +531,220 @@ def structure_section18_moa(sec18: str) -> dict[str, Any] | None:
     return {"intro": intro, "cards": []}
 
 
+def _sec11_normalize_dots(s: str) -> str:
+    """章 11 用：NFKC するが改行は維持する（_nfkc は全空白を潰すため使わない）。"""
+    t = (s or "").replace("\r\n", "\n").replace("\r", "\n")
+    out: list[str] = []
+    for ln in t.split("\n"):
+        u = unicodedata.normalize("NFKC", ln)
+        u = u.replace("．", ".").replace("ｰ", "-")
+        u = re.sub(r"[ \t\u3000]+", " ", u).strip()
+        out.append(u)
+    return "\n".join(out)
+
+
+def _sec11_looks_soc_header(s: str) -> bool:
+    """11.2 以降の MedDRA SOC 見出し行の簡易判定（誤検出を減らす）。"""
+    s = s.strip()
+    if not s or len(s) > 56 or len(s) < 4:
+        return False
+    if re.match(r"^11\.", s):
+        return False
+    if "、" in s or "。" in s:
+        return False
+    if re.search(r"\([\d.]+\s*[%％]", s):
+        return False
+    return bool(re.search(r"(障害|疾患|寄生虫症)$", s))
+
+
+def _sec11_line_starts_new_segment(line: str) -> bool:
+    ln = line.strip()
+    if not ln:
+        return False
+    if re.match(r"^11\.1\.\d+", ln):
+        return True
+    if re.match(r"^11\.1\s+", ln) or re.match(r"^11\.1重大", ln) or ln == "11.1":
+        return True
+    if re.match(r"^11\.2\s+", ln) or ln.startswith("11.2"):
+        return True
+    if re.match(r"^5%以上", ln) or re.match(r"^5％以上", ln):
+        return True
+    if re.match(r"^\[\d", ln):
+        return True
+    return _sec11_looks_soc_header(ln)
+
+
+def _sec11_merge_broken_lines(text: str) -> list[str]:
+    """PDF 由来の不自然改行を前後行結合して整える。"""
+    lines = [ln.strip() for ln in _sec11_normalize_dots(text).split("\n")]
+    lines = [ln for ln in lines if ln]
+    if not lines:
+        return []
+    out: list[str] = []
+    for line in lines:
+        if not out:
+            out.append(line)
+            continue
+        prev = out[-1]
+        if _sec11_line_starts_new_segment(line):
+            out.append(line)
+            continue
+        if _sec11_looks_soc_header(prev) and _sec11_looks_soc_header(line):
+            out.append(line)
+            continue
+        # SOC 見出しの直後は本文行のため結合しない（「胃腸障害」+「下痢(72%)」等の誤結合防止）
+        if _sec11_looks_soc_header(prev) and not (
+            _sec11_line_starts_new_segment(line) or _sec11_looks_soc_header(line)
+        ):
+            out.append(line)
+            continue
+        if prev.endswith(("。", "．", "?", "！", "」", "』", "]", "）", ")")):
+            out.append(line)
+            continue
+        out[-1] = prev + line
+    return out
+
+
+_RE_SEC11_SYM_PCT = re.compile(
+    r"([\u3040-\u30ff\u4e00-\u9fffA-Za-z0-9／/・\-‐\s]{1,48}?)\s*[\(（]\s*([\d.]+\s*[%％])\s*[\)）]"
+)
+
+
+def _sec11_extract_symptom_bullets(body: str, soc: str, *, budget: list[int]) -> list[dict[str, str]]:
+    """SOC ブロック本文から「名称（x%）」を拾い other_items 用 dict を返す。"""
+    if budget[0] <= 0:
+        return []
+    raw = re.sub(r"\s+", " ", (body or "").strip())
+    out: list[dict[str, str]] = []
+    for m in _RE_SEC11_SYM_PCT.finditer(raw):
+        name = re.sub(r"\s+", "", m.group(1).strip())
+        pct = m.group(2).strip().replace("％", "%")
+        if len(name) < 2:
+            continue
+        sym = f"{name}（{pct}）"
+        out.append({"symptom": sym, "soc": soc})
+        budget[0] -= 1
+        if budget[0] <= 0:
+            break
+    if not out and raw and len(raw) >= 6 and budget[0] > 0:
+        frag = _clip_moa_body(raw, 72)
+        if frag and not re.match(r"^5%以上", frag):
+            out.append({"symptom": frag, "soc": soc})
+            budget[0] -= 1
+    return out
+
+
+def structure_section11_summary(sec11: str) -> dict[str, Any] | None:
+    """
+    11 章テキストから図解用「主な副作用」2カラム要約を組み立てる。
+    パース不能時は None（テンプレは従来の全文表示にフォールバック）。
+    """
+    raw = _sec11_normalize_dots(sec11 or "").strip()
+    if len(raw) < 80:
+        return None
+    lines = _sec11_merge_broken_lines(raw)
+    if not lines:
+        return None
+    text = "\n".join(lines)
+    m12 = re.search(r"(?m)^\s*11\.2\s+", text)
+    if not m12:
+        return None
+    head = text[: m12.start()].strip()
+    tail = text[m12.start() :].strip()
+
+    serious_items: list[dict[str, str]] = []
+    head_lines = [ln.strip() for ln in head.split("\n") if ln.strip()]
+    i0 = 0
+    for i, ln in enumerate(head_lines):
+        if re.match(r"^11\.1\s+", ln) or re.match(r"^11\.1重大", ln):
+            i0 = i + 1
+            break
+    serious_scan = head_lines[i0:]
+    cur: dict[str, Any] | None = None
+    for ln in serious_scan:
+        m = re.match(r"^11\.1\.(\d+)\s+(.+)$", ln)
+        if m:
+            if cur:
+                body = _clip_moa_body(" ".join(cur["body_lines"]), 320)
+                serious_items.append(
+                    {
+                        "num": cur["num"],
+                        "heading": _clip_moa_body(cur["heading"], 120),
+                        "body": body,
+                    }
+                )
+            cur = {"num": m.group(1), "heading": m.group(2).strip(), "body_lines": []}
+        elif cur is not None:
+            cur["body_lines"].append(ln)
+    if cur:
+        body = _clip_moa_body(" ".join(cur["body_lines"]), 320)
+        serious_items.append(
+            {
+                "num": cur["num"],
+                "heading": _clip_moa_body(cur["heading"], 120),
+                "body": body,
+            }
+        )
+
+    tail_lines = [ln.strip() for ln in tail.split("\n") if ln.strip()]
+    j = 0
+    if tail_lines and re.match(r"^11\.2", tail_lines[0]):
+        j = 1
+    while j < len(tail_lines):
+        tl = tail_lines[j]
+        if re.match(r"^5%以上", tl) or (
+            "5%以上" in tl and "1%" in tl and len(tl) < 80
+        ):
+            j += 1
+            continue
+        break
+
+    other_items: list[dict[str, str]] = []
+    budget = [14]
+    cur_soc = ""
+    cur_parts: list[str] = []
+    while j < len(tail_lines):
+        ln = tail_lines[j]
+        if re.match(r"^5%以上", ln) or ("5%以上" in ln and "1%" in ln and len(ln) < 80):
+            j += 1
+            continue
+        if _sec11_looks_soc_header(ln):
+            if cur_soc and cur_parts:
+                body = " ".join(cur_parts)
+                other_items.extend(
+                    _sec11_extract_symptom_bullets(body, cur_soc, budget=budget)
+                )
+            cur_soc = ln.strip()
+            cur_parts = []
+        else:
+            cur_parts.append(ln)
+        j += 1
+    if cur_soc and cur_parts:
+        body = " ".join(cur_parts)
+        other_items.extend(
+            _sec11_extract_symptom_bullets(body, cur_soc, budget=budget)
+        )
+
+    if not serious_items and not other_items:
+        return None
+
+    band_5 = bool(re.search(r"5\s*[%％]\s*以上", tail[:1200]))
+    other_title = (
+        "その他の副作用（5%以上の例）"
+        if band_5
+        else "その他の副作用（1%以上など）"
+    )
+
+    return {
+        "intro_note": "以下は頻度区分の例です。実際の症状・対処は必ず医療機関の指示に従ってください。",
+        "panel_title": "主な副作用（添付文書の区分）",
+        "serious_title": "重大な副作用（例）",
+        "serious_items": serious_items[:6],
+        "other_title": other_title,
+        "other_items": other_items[:14],
+    }
+
+
 def _inject_sec17_subsection_newlines(s: str) -> str:
     """17.1.1 / 17.1.2 等の直前に改行を補う（1 行潰れ PDF 用）。"""
     t = _nfkc(s or "")

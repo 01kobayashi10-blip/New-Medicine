@@ -345,6 +345,104 @@
       color: var(--slate-500);
     }
 
+    /* 主な副作用（2カラム要約） */
+    .ae2-panel-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0 0 0.65rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--brand-dark);
+    }
+    .ae2-panel-num {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--white);
+      background: var(--brand-mid);
+      border-radius: 0.45rem;
+    }
+    .ae2-note {
+      margin: 0 0 1rem;
+      font-size: 0.8rem;
+      line-height: 1.55;
+      color: var(--slate-500);
+    }
+    .ae2-grid {
+      display: grid;
+      gap: 1rem;
+      align-items: stretch;
+    }
+    @media (min-width: 900px) {
+      .ae2-grid { grid-template-columns: 1fr 1fr; }
+    }
+    .ae2-card {
+      border-radius: 1rem;
+      padding: 1.1rem 1.15rem;
+      min-height: 6rem;
+    }
+    .ae2-card--serious {
+      border: 1px solid #fecaca;
+      background: rgb(254 242 242 / 0.65);
+    }
+    .ae2-card--other {
+      border: 1px solid var(--slate-200);
+      background: var(--white);
+      box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+    }
+    .ae2-card-title {
+      margin: 0 0 0.65rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+    .ae2-card--serious .ae2-card-title { color: #7f1d1d; }
+    .ae2-card--other .ae2-card-title { color: var(--brand-dark); }
+    .ae2-serious-line {
+      margin: 0 0 0.55rem;
+      font-size: 0.82rem;
+      line-height: 1.65;
+      color: rgb(69 10 10 / 0.95);
+    }
+    .ae2-serious-line:last-child { margin-bottom: 0; }
+    .ae2-muted {
+      margin: 0;
+      font-size: 0.8rem;
+      line-height: 1.55;
+      color: var(--slate-500);
+    }
+    .ae2-ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      color: var(--slate-700);
+    }
+    .ae2-li {
+      display: flex;
+      gap: 0.45rem;
+      margin: 0 0 0.45rem;
+    }
+    .ae2-li:last-child { margin-bottom: 0; }
+    .ae2-li-dot {
+      flex-shrink: 0;
+      color: var(--slate-400);
+      font-size: 0.75rem;
+      line-height: 1.65;
+    }
+    .ae2-li strong { color: var(--slate-800); font-weight: 700; }
+    .ae2-source {
+      margin: 0.85rem 0 0;
+      font-size: 0.7rem;
+      color: var(--slate-500);
+    }
+
     .footer-note {
       margin-top: 2rem;
       padding-top: 1.5rem;
@@ -502,9 +600,47 @@
         <span class="badge">11</span>
         副作用
       </h2>
+      {% if pharma11 %}
+      <p class="subhead-hint">「11.1 重大な副作用」「11.2 その他の副作用」から自動で要約しています。詳細は添付文書 PDF を参照してください。</p>
+      <div class="ae2-panel-title">
+        <span class="ae2-panel-num">4</span>
+        {{ pharma11.panel_title }}
+      </div>
+      <p class="ae2-note">{{ pharma11.intro_note }}</p>
+      <div class="ae2-grid">
+        <div class="ae2-card ae2-card--serious">
+          <p class="ae2-card-title">{{ pharma11.serious_title }}</p>
+          {% if pharma11.serious_items and pharma11.serious_items|length > 0 %}
+          {% for it in pharma11.serious_items %}
+          <p class="ae2-serious-line"><strong>11.1.{{ it.num }} {{ it.heading }}</strong>{% if it.body %} {{ it.body }}{% endif %}</p>
+          {% endfor %}
+          {% else %}
+          <p class="ae2-muted">重大な副作用の自動リストが得られませんでした。添付文書「11.1」を参照してください。</p>
+          {% endif %}
+        </div>
+        <div class="ae2-card ae2-card--other">
+          <p class="ae2-card-title">{{ pharma11.other_title }}</p>
+          {% if pharma11.other_items and pharma11.other_items|length > 0 %}
+          <ul class="ae2-ul">
+            {% for row in pharma11.other_items %}
+            <li class="ae2-li"><span class="ae2-li-dot" aria-hidden="true">•</span><span><strong>{{ row.symptom }}</strong>（{{ row.soc }}）</span></li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p class="ae2-muted">その他の副作用のリスト化に該当する記載が得られませんでした。添付文書「11.2」を参照してください。</p>
+          {% endif %}
+        </div>
+      </div>
+      <p class="ae2-source">出典：添付文書「11. 副作用」</p>
+      <details class="card" style="margin-top:1rem;">
+        <summary style="cursor:pointer;font-size:0.8rem;font-weight:600;color:var(--slate-600);padding:0.35rem 0;">11章 抜粋全文を表示</summary>
+        <div class="card-body" style="margin-top:0.5rem;">{{ section_11 or "—" }}</div>
+      </details>
+      {% else %}
       <div class="card">
         <div class="card-body">{{ section_11 or "—" }}</div>
       </div>
+      {% endif %}
     </section>
 
     <section class="section-block">
