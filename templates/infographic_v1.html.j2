@@ -210,6 +210,67 @@
       color: var(--brand-dark);
     }
 
+    .moa-wrap { margin-top: 0.25rem; }
+    .moa-intro {
+      margin: 0 0 1.15rem;
+      padding: 1rem 1.15rem;
+      font-size: 0.92rem;
+      line-height: 1.75;
+      color: var(--slate-800);
+      background: linear-gradient(180deg, #f8fafc 0%, #fff 40%);
+      border: 1px solid var(--slate-200);
+      border-radius: 0.85rem;
+    }
+    .moa-grid {
+      display: grid;
+      gap: 1rem;
+      margin: 0 0 0.85rem;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 720px) {
+      .moa-grid { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+    }
+    .moa-card {
+      margin: 0;
+      padding: 1rem 1.1rem;
+      background: var(--white);
+      border: 1px solid var(--slate-200);
+      border-radius: 0.95rem;
+      box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+    }
+    .moa-card--accent {
+      border-width: 2px;
+      border-color: #7dd3fc;
+      background: linear-gradient(145deg, #f0f9ff 0%, #fff 55%, #e0f2fe 100%);
+      box-shadow: 0 2px 8px rgb(3 105 161 / 0.08);
+    }
+    .moa-kicker {
+      margin: 0 0 0.35rem;
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--slate-500);
+    }
+    .moa-card-title {
+      margin: 0 0 0.5rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+      line-height: 1.35;
+      color: var(--brand-dark);
+    }
+    .moa-card-body {
+      margin: 0;
+      font-size: 0.84rem;
+      line-height: 1.65;
+      color: var(--slate-800);
+    }
+    .moa-source {
+      margin: 0.35rem 0 0;
+      font-size: 0.72rem;
+      color: var(--slate-500);
+    }
+
     .footer-note {
       margin-top: 2rem;
       padding-top: 1.5rem;
@@ -300,9 +361,26 @@
         <span class="badge">18</span>
         薬効薬理
       </h2>
+      {% if pharma18 %}
+      <p class="subhead-hint">18.1 作用機序を冒頭にまとめ、該当する節（in vitro / in vivo 等）をカードに分割しています。全文は添付文書 PDF を参照してください。</p>
+      <div class="moa-wrap">
+        <p class="moa-intro">{{ pharma18.intro }}</p>
+        <div class="moa-grid">
+          {% for c in pharma18.cards %}
+          <article class="moa-card{% if c.accent %} moa-card--accent{% endif %}">
+            <p class="moa-kicker">{{ c.label }}</p>
+            <h3 class="moa-card-title">{{ c.title }}</h3>
+            <p class="moa-card-body">{{ c.body }}</p>
+          </article>
+          {% endfor %}
+        </div>
+        <p class="moa-source">出典：添付文書「18. 薬効薬理」</p>
+      </div>
+      {% else %}
       <div class="card">
         <div class="card-body">{{ section_18 or "—" }}</div>
       </div>
+      {% endif %}
     </section>
 
     <section class="section-block">

@@ -91,6 +91,7 @@ def render_html(
     card_yakka: str = "",
     card_efficacy: str = "",
     ident_preview: str = "",
+    pharma18: dict | None = None,
 ) -> str:
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATE_DIR)),
@@ -116,6 +117,7 @@ def render_html(
         card_yakka=card_yakka,
         card_efficacy=card_efficacy,
         ident_preview=ident_preview,
+        pharma18=pharma18,
     )
 
 
@@ -197,6 +199,7 @@ def process_item(item: dict, overrides: dict) -> tuple[str | None, str]:
                 "v1 では添付文書の自動抜粋を行っていません（GeneralList の URL を指定すると抜粋されます）。"
             )
         cards = _cards_for_title(title, sec)
+        pharma18 = pmda_if_extract.structure_section18_moa(sec.get("section_18") or "")
         html = render_html(
             title_display=title[:200] + ("…" if len(title) > 200 else ""),
             stable_id=sid,
@@ -215,6 +218,7 @@ def process_item(item: dict, overrides: dict) -> tuple[str | None, str]:
             card_yakka=cards["card_yakka"],
             card_efficacy=cards["card_efficacy"],
             ident_preview=cards["ident_preview"],
+            pharma18=pharma18,
         )
         out_path.write_text(html, encoding="utf-8")
         return f"reports/{out_name}", "override_if" if src_pdf else "override"
@@ -277,6 +281,7 @@ def process_item(item: dict, overrides: dict) -> tuple[str | None, str]:
         disc = "候補 1 件ですが強一致条件を満たさないため、PMDA URL は未設定です。override または検索クエリの調整が必要です。"
 
     cards = _cards_for_title(title, sec)
+    pharma18 = pmda_if_extract.structure_section18_moa(sec.get("section_18") or "")
     html = render_html(
         title_display=title[:200] + ("…" if len(title) > 200 else ""),
         stable_id=sid,
@@ -295,6 +300,7 @@ def process_item(item: dict, overrides: dict) -> tuple[str | None, str]:
         card_yakka=cards["card_yakka"],
         card_efficacy=cards["card_efficacy"],
         ident_preview=cards["ident_preview"],
+        pharma18=pharma18,
     )
     REPORTS.mkdir(parents=True, exist_ok=True)
     out_path.write_text(html, encoding="utf-8")

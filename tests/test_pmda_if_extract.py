@@ -106,6 +106,30 @@ class TestSummarizeCards(unittest.TestCase):
         self.assertIn("エタノール付加物", g)
 
 
+class TestStructureSection18(unittest.TestCase):
+    def test_moa_cards_from_tucatinib_like_text(self) -> None:
+        sec18 = """18.1 作用機序 
+ツカチニブは、HER2のキナーゼ活性を阻害することにより、腫瘍の
+増殖を抑制すると考えられている18)。 
+18.2 抗腫瘍作用 
+18.2.1 in vitro 
+ツカチニブは、HER2陽性のヒト乳癌由来細胞株(BT-474細胞株等)
+に対して、増殖抑制作用を示した19)。 
+18.2.2 in vivo 
+ツカチニブは、BT-474細胞株を皮下移植した重症複合型免疫不全マ
+ウスに対して、腫瘍増殖抑制作用を示した。また、ツカチニブ単独
+及びトラスツズマブ単独と比較して、ツカチニブとトラスツズマブ
+との併用では腫瘍増殖抑制作用の増強が認められた20)。
+"""
+        d = pmda_if_extract.structure_section18_moa(sec18)
+        self.assertIsNotNone(d)
+        assert d is not None
+        self.assertIn("HER2", d["intro"])
+        self.assertEqual(len(d["cards"]), 2)
+        self.assertTrue(d["cards"][-1]["accent"])
+        self.assertIn("BT-474", d["cards"][1]["body"])
+
+
 class TestSplitIfSections(unittest.TestCase):
     def test_strips_leading_page_noise_before_ident(self) -> None:
         text = """
