@@ -73,7 +73,7 @@ def resolve_infographic_path(raw: str) -> Path | None:
 
 def format_latest_hatsubai_block(items: list[dict[str, str]]) -> str:
     if not items:
-        return "（このRSS取得では、タイトルに「発売」を含む記事はありませんでした。）"
+        return "（このRSS取得では、実発売フィルタに該当する記事はありませんでした。）"
     lines: list[str] = []
     for it in items:
         title = it["title"]

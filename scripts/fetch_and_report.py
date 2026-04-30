@@ -22,8 +22,10 @@ REPORT_PATH = ROOT / "reports" / "latest.html"
 NOTIFY_LATEST_PATH = ROOT / "reports" / "notify_latest.json"
 GENERATE_QUEUE_PATH = ROOT / "reports" / "generate_queue.json"
 
-DEFAULT_RSS = (
-    "https://www.mixonline.jp/DesktopModules/MixOnline_Rss/MixOnlinerss.aspx?rssmode=3"
+# rssmode=3 は新薬寄りだが件数が少なく「発売」見出しがすぐ流れる。=1 と併用してカバーする。
+DEFAULT_RSS_FEED_URLS = (
+    "https://www.mixonline.jp/DesktopModules/MixOnline_Rss/MixOnlinerss.aspx?rssmode=3,"
+    "https://www.mixonline.jp/DesktopModules/MixOnline_Rss/MixOnlinerss.aspx?rssmode=1"
 )
 
 # RSS の link が / で始まる相対URLのとき、file:// で開いた HTML からも辿れるよう絶対化する基準
@@ -42,13 +44,13 @@ def _parse_exclude_substrings(raw: str) -> list[str]:
 def title_matches_hatsubai(
     title: str,
     *,
-    require_substring: str,
+    require_any: list[str],
     base_substring: str,
     exclude_substrings: list[str],
 ) -> bool:
-    """実発売の見出しに寄せる。require が空なら従来どおり base のみ（除外は常に適用）。"""
-    if require_substring:
-        if require_substring not in title:
+    """実発売の見出しに寄せる。require_any が空なら base のみ（除外は常に適用）。"""
+    if require_any:
+        if not any(part in title for part in require_any):
             return False
     else:
         if base_substring not in title:
@@ -59,12 +61,55 @@ def title_matches_hatsubai(
     return True
 
 
-def load_hatsubai_filter_from_environ() -> tuple[str, str, list[str]]:
-    """(require, base, excludes)。未設定時は「を発売」必須＋発売予定系除外。"""
-    require = os.environ.get("HATSUBAI_REQUIRE_SUBSTRING", "を発売").strip()
+def load_hatsubai_require_any() -> list[str]:
+    """タイトルに含まれるべき実発売シグネチャ（いずれか一致）。空リストなら base のみでマッチ。"""
+    if "HATSUBAI_REQUIRE_ANY" in os.environ:
+        return _parse_exclude_substrings(os.environ.get("HATSUBAI_REQUIRE_ANY", ""))
+    legacy = os.environ.get("HATSUBAI_REQUIRE_SUBSTRING")
+    if legacy is not None:
+        s = legacy.strip()
+        return [s] if s else []
+    return ["を発売", "に発売"]
+
+
+def load_hatsubai_filter_from_environ() -> tuple[list[str], str, list[str]]:
+    """(require_any, base, excludes)。除外既定に「発売は「」を含め発売スケジュール見出しを落とす。"""
+    require_any = load_hatsubai_require_any()
     base = os.environ.get("HATSUBAI_BASE_SUBSTRING", "発売").strip() or "発売"
-    raw_ex = os.environ.get("HATSUBAI_EXCLUDE_SUBSTRINGS", "発売予定,発売を予定")
-    return require, base, _parse_exclude_substrings(raw_ex)
+    raw_ex = os.environ.get(
+        "HATSUBAI_EXCLUDE_SUBSTRINGS", "発売予定,発売を予定,発売は「"
+    )
+    return require_any, base, _parse_exclude_substrings(raw_ex)
+
+
+def load_feed_urls() -> list[str]:
+    """RSS_FEED_URLS（カンマ区切り）優先。未設定なら RSS_URL の1本。それもなければ既定の2本。"""
+    multi = os.environ.get("RSS_FEED_URLS", "").strip()
+    if multi:
+        return [u.strip() for u in multi.split(",") if u.strip()]
+    single = os.environ.get("RSS_URL", "").strip()
+    if single:
+        return [single]
+    return [u.strip() for u in DEFAULT_RSS_FEED_URLS.split(",") if u.strip()]
+
+
+def merge_rss_entries(urls: list[str]) -> tuple[list[feedparser.FeedParserDict], int]:
+    """複数 RSS を取得し stable_id で重複除去（先勝ち）。戻り値は (merged, raw_entry_sum)。"""
+    merged: list[feedparser.FeedParserDict] = []
+    seen: set[str] = set()
+    raw_total = 0
+    for url in urls:
+        raw = fetch_feed(url)
+        feed = feedparser.parse(raw)
+        if feed.bozo and not feed.entries:
+            raise ValueError(f"could not parse RSS: {url}")
+        raw_total += len(feed.entries)
+        for entry in feed.entries:
+            sid = stable_id(entry)
+            if sid and sid not in seen:
+                seen.add(sid)
+                merged.append(entry)
+    return merged, raw_total
 
 
 def canonical_item_id(raw: str) -> str:
@@ -226,9 +271,12 @@ def write_notify_latest(rows: list[tuple[str, str, str]], top_n: int) -> None:
 
 
 def main() -> int:
-    rss_url = os.environ.get("RSS_URL", DEFAULT_RSS)
+    urls = load_feed_urls()
     try:
-        raw = fetch_feed(rss_url)
+        merged_entries, raw_entry_sum = merge_rss_entries(urls)
+    except ValueError as e:
+        print(f"ERROR: {e}", file=sys.stderr)
+        return 1
     except urllib.error.HTTPError as e:
         print(f"ERROR: HTTP {e.code} fetching RSS", file=sys.stderr)
         return 1
@@ -242,19 +290,14 @@ def main() -> int:
         print("ERROR: socket timed out", file=sys.stderr)
         return 1
 
-    feed = feedparser.parse(raw)
-    if feed.bozo and not feed.entries:
-        print("ERROR: could not parse RSS", file=sys.stderr)
-        return 1
-
-    require, base, excludes = load_hatsubai_filter_from_environ()
-    total = len(feed.entries)
+    require_any, base, excludes = load_hatsubai_filter_from_environ()
+    total = len(merged_entries)
     matched: list[feedparser.FeedParserDict] = []
-    for entry in feed.entries:
+    for entry in merged_entries:
         title = entry.get("title") or ""
         if title_matches_hatsubai(
             title,
-            require_substring=require,
+            require_any=require_any,
             base_substring=base,
             exclude_substrings=excludes,
         ):
@@ -265,6 +308,8 @@ def main() -> int:
     processed = load_processed()
     new_entries = [e for e in matched if stable_id(e) not in processed]
 
+    print(f"rss_feed_urls={len(urls)}")
+    print(f"rss_raw_entries={raw_entry_sum}")
     print(f"rss_total_entries={total}")
     print(f"matched_hatsubai={len(matched)}")
     print(f"new_unprocessed={len(new_entries)}")

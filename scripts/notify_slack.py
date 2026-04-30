@@ -40,7 +40,7 @@ def load_latest_items() -> list[dict[str, str]]:
 
 def format_latest_for_slack(items: list[dict[str, str]]) -> str:
     if not items:
-        return "（このRSS取得では「発売」該当記事なし）"
+        return "（このRSS取得では実発売フィルタ該当なし）"
     lines: list[str] = []
     for it in items[:5]:
         pub = f" {it['published']}" if it.get("published") else ""
