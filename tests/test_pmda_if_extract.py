@@ -378,6 +378,39 @@ class TestStructureDosageMemo(unittest.TestCase):
             pmda_if_extract.structure_dosage_memo("6. 用法及び用量\n用法\n")
         )
 
+    def test_sec7_header_glued_to_sec6_paragraph(self) -> None:
+        """PDF 結合で「7. 用法…」が6章本文と同一行に付くと従来の ^7 境界では標準用法が落ちる。"""
+        raw = """
+6. 用法及び用量
+トラスツズマブ(遺伝子組換え)及びカペシタビンとの併用において、通常、成人にはツカチニブとして1回300mgを1日2回経口投与する。なお、患者の状態により適宜減量する。7. 用法及び用量に関連する注意
+7.1 本剤単独投与での有効性及び安全性は確立していない。
+7.2 重度の肝機能障害(Child-Pugh分類C)のある患者では、本剤の開始用量は1回200mgを1日2回とすること。
+7.4 強いCYP2C8阻害剤と併用する場合、本剤の開始用量は1回100mgを1日2回とすること。
+7.5 本剤とトラスツズマブ及びカペシタビンを併用する際のカペシタビンの用法及び用量は以下のとおりとすること。
+
+10. 相互作用
+10.1 x
+"""
+        r = pmda_if_extract.structure_dosage_memo(raw)
+        self.assertIsNotNone(r)
+        self.assertTrue(any("300mg" in b and "ツカチニブ" in b for b in r["bullets"]))
+
+    def test_fullwidth_digits_in_sec6(self) -> None:
+        raw = """
+6. 用法及び用量
+トラスツズマブ及びカペシタビンとの併用において、通常、成人にはツカチニブとして１回３００ｍｇを１日２回経口投与する。なお、患者の状態により適宜減量する。
+
+7. 用法及び用量に関連する注意
+7.1 本剤単独投与での有効性及び安全性は確立していない。
+
+10. 相互作用
+10.1 x
+y
+"""
+        r = pmda_if_extract.structure_dosage_memo(raw)
+        self.assertIsNotNone(r)
+        self.assertTrue(any("300mg" in b for b in r["bullets"]))
+
 
 if __name__ == "__main__":
     unittest.main()

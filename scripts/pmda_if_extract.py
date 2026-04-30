@@ -1006,13 +1006,13 @@ def _dosage6710_line_starts_segment(line: str) -> bool:
     s = line.strip()
     if not s:
         return False
-    if re.match(r"^6\.\s*用法及び用量", s):
+    if re.match(r"^6\s*\.\s*用法及び用量", s):
         return True
-    if re.match(r"^7\.\s*用法及び用量に関連", s):
+    if re.match(r"^7\s*\.\s*用法及び用量に関連", s):
         return True
-    if re.match(r"^7\.\s*[1-9]\d*\s+", s):
+    if re.match(r"^7\s*\.\s*[1-9]\d*\s+", s):
         return True
-    if re.match(r"^10\.", s):
+    if re.match(r"^10\s*\.", s):
         return True
     if s.startswith("減量・中止") or s.startswith("副作用に対する休薬"):
         return True
@@ -1051,12 +1051,12 @@ def _sec6710_merge_broken_lines(text: str) -> str:
 
 def _dosage_extract_7_subsection(full: str, num: str) -> str:
     """7.n 小節本文（次の 7.m / 減量表 / 10 まで）。"""
-    m = re.search(rf"(?m)^7\.\s*{num}\s+", full)
+    m = re.search(rf"(?m)^7\s*\.\s*{num}\s+", full)
     if not m:
         return ""
     rest = full[m.end() :]
     m_end = re.search(
-        r"(?m)^7\.\s*(?:[1-9]|1[0-9])\s+|^減量・中止|^副作用に対する休薬|^10\.",
+        r"(?m)^7\s*\.\s*(?:[1-9]|1[0-9])\s+|^減量・中止|^副作用に対する休薬|^10\.",
         rest,
     )
     body = rest[: m_end.start()] if m_end else rest
@@ -1068,9 +1068,29 @@ def _dosage_extract_7_subsection(full: str, num: str) -> str:
     return body
 
 
+def _dosage_sec6_body_from_merged(merged: str) -> str:
+    """
+    章6本文（見出し直後〜「7. 用法及び用量に関連」手前まで）。
+    PDF 由来で「7.」が行頭でない場合も拾う（^ 依存の正規表現では落ちるため）。
+    """
+    m = re.search(r"6\s*\.\s*用法及び用量", merged)
+    if not m:
+        return ""
+    tail = merged[m.end() :]
+    j = re.search(r"7\s*\.\s*用法及び用量に関連", tail)
+    body = tail[: j.start()].strip() if j else tail.strip()
+    if body.startswith("用法及び用量"):
+        body = re.sub(r"^用法及び用量\s*", "", body).strip()
+    return body
+
+
 def _dosage_standard_bullet(sec6_body: str) -> str | None:
     """6 章本文から標準用法の1行メモを組み立てる。"""
-    line = re.sub(r"\s+", " ", (sec6_body or "").strip())
+    raw = (sec6_body or "").strip()
+    if len(raw) < 12:
+        return None
+    line = unicodedata.normalize("NFKC", raw)
+    line = re.sub(r"\s+", " ", line)
     if len(line) < 24:
         return None
     dose_m = re.search(r"1回\s*(\d+)\s*m[gｇ]", line, re.I)
@@ -1079,9 +1099,14 @@ def _dosage_standard_bullet(sec6_body: str) -> str | None:
         return None
     dose, nday = dose_m.group(1), day_m.group(1)
     ing_m = re.search(
-        r"(?:通常、|通常)?(?:成人|小児等|患者)には\s*([^\s、。]+(?:\s+[^\s、。]+){0,4}?)\s*として\s*1回",
+        r"(?:通常、|通常)?(?:成人|小児等|小児|患者)には\s*([^\s、。]+(?:\s+[^\s、。]+){0,4}?)\s*として\s*1回",
         line,
     )
+    if not ing_m:
+        ing_m = re.search(
+            r"には\s*([^\s、。]+(?:\s+[^\s、。]+){0,3}?)\s*として\s*1回",
+            line,
+        )
     ing = ing_m.group(1).strip() if ing_m else "本剤"
     combo_m = re.search(r"(.+?(?:との併用において|併用において))", line)
     if combo_m:
@@ -1142,17 +1167,11 @@ def structure_dosage_memo(section_6710: str) -> dict[str, Any] | None:
     raw = (section_6710 or "").strip()
     if len(raw) < 120:
         return None
-    merged = _sec6710_merge_broken_lines(raw)
+    merged = unicodedata.normalize("NFKC", _sec6710_merge_broken_lines(raw))
     if len(merged) < 100:
         return None
 
-    m6 = re.search(
-        r"(?ms)^6\.\s*用法及び用量\s*(.*?)(?=^7\.\s*用法及び用量に関連)",
-        merged,
-    )
-    sec6_body = (m6.group(1).strip() if m6 else "").strip()
-    if sec6_body.startswith("用法及び用量"):
-        sec6_body = re.sub(r"^用法及び用量\s*", "", sec6_body).strip()
+    sec6_body = _dosage_sec6_body_from_merged(merged)
 
     bullets: list[str] = []
     std = _dosage_standard_bullet(sec6_body) if sec6_body else None
