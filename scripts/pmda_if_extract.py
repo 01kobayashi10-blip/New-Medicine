@@ -496,13 +496,17 @@ def _inject_sec18_structure_newlines(s: str) -> str:
     """PDF で 18.1 見出しや 18.2 見出しが前行に潰れている場合に改行を補う。"""
     t = _nfkc(s or "")
     t = re.sub(r"(18[\.．]1\s*作用機序)\s*", r"\1\n", t)
-    t = re.sub(r"(18[\.．]2\s*抗腫瘍作用)\s*", r"\n\1\n", t)
+    # 18.2 は「抗腫瘍作用」に限らず任意小見出し（例: CGRP 受容体…）の前で改行を補う。18.2.1 は「2」の直後が「.」のため除外。
+    t = re.sub(r"(?<![\n])(?<![\d])(18[\.．]2)(?=\s)", r"\n\1", t)
     return t
 
 
 def _soften_if_reference_markers(s: str) -> str:
     """添付文書由来の参照表記「18)。」を句点に寄せる。"""
-    return re.sub(r"(\d{1,3})\)\s*([。．])", r"\2", s or "")
+    s = re.sub(r"(\d{1,3})\)\s*([。．])", r"\2", s or "")
+    # 「23)、 。」のような参照直後の読点ノイズを弱める
+    s = re.sub(r"(\d{1,3})\)\s*、\s*", "、", s)
+    return s
 
 
 def _clip_moa_body(s: str, max_chars: int) -> str:
@@ -512,6 +516,139 @@ def _clip_moa_body(s: str, max_chars: int) -> str:
     return t[: max_chars - 1].rstrip() + "…"
 
 
+# 図解「作用機序」ブロックの長さ（計画案: 正しさ > 簡潔さ。ソフト超えは可、ハードで打ち止め）
+_MOA_T_SOFT = 220
+_MOA_T_HARD = 320
+_MOA_SENT_MAX = 160
+_MOA_MIN_LEN = 25
+_MOA_GUIDANCE_NOTE = "詳細は添付文書「18.1 作用機序」をご確認ください。"
+
+_RE_MO_VERB = re.compile(
+    r"阻害|拮抗|抑制する|抑制|結合|示した|示す|介在|調節|増強|伝達|活性|作用する|結合する"
+)
+# 背景「〜は〜である」との区別用（関連するだけでは機序本文とみなさない）
+_RE_MECH_VERB = re.compile(r"阻害|拮抗|抑制する|抑制|結合|示した|示す|キナーゼ|伝達|増強")
+_RE_MO_SUBJECT = re.compile(r"本剤|当薬")
+_RE_MO_TARGET = re.compile(r"HER2|CGRP|受容体|キナーゼ|エストロゲン|アンドロゲン", re.I)
+
+
+def _moa_has_verb(s: str) -> bool:
+    return bool(_RE_MO_VERB.search(s))
+
+
+def _moa_background_only(s: str) -> bool:
+    """病態説明の定義文（は〜である）で、機序らしい動詞を含まないもの。"""
+    t = (s or "").strip()
+    if _RE_MO_SUBJECT.search(t):
+        return False
+    if _RE_MECH_VERB.search(t):
+        return False
+    return bool(re.match(r"^.{0,120}は[^。]{0,200}である[。．]\s*$", t))
+
+
+def _score_moa_sentence(s: str) -> int:
+    sc = 0
+    if _moa_background_only(s):
+        sc -= 6
+    if _RE_MO_SUBJECT.search(s) and _moa_has_verb(s):
+        sc += 8
+    elif _RE_MO_TARGET.search(s) and _moa_has_verb(s):
+        sc += 5
+    elif _moa_has_verb(s):
+        sc += 2
+    if _RE_MO_SUBJECT.search(s):
+        sc += 1
+    return sc
+
+
+def _split_moa_sentences(text: str) -> list[str]:
+    t = re.sub(r"\s+", " ", (text or "").strip())
+    if not t:
+        return []
+    parts = re.split(r"(?<=[。．])", t)
+    out = [p.strip() for p in parts if p.strip()]
+    return out
+
+
+def _clip_one_sentence(s: str, max_chars: int) -> str:
+    """1文を max_chars 以内に収める。句点バックオフを優先。"""
+    s = re.sub(r"\s+", " ", (s or "").strip())
+    if len(s) <= max_chars:
+        return s
+    window = s[:max_chars]
+    cut = max(window.rfind("。"), window.rfind("．"))
+    if cut >= _MOA_MIN_LEN:
+        return s[: cut + 1].strip()
+    return s[: max_chars - 1].rstrip() + "…"
+
+
+def _strip_sec18_body_if_18_2_leaked(body: str) -> str:
+    """境界抽出の失敗時、本文中の 18.2 見出し以降を捨てる。"""
+    m = re.search(r"18[\.．]2\s+", body or "")
+    if m:
+        return body[: m.start()].strip()
+    return (body or "").strip()
+
+
+def _clip_intro_hard(text: str, hard: int) -> tuple[str, bool]:
+    """hard 字以内に収める。句点バックオフを試み、切り詰めたら (text, True)。"""
+    t = re.sub(r"\s+", " ", (text or "").strip())
+    if len(t) <= hard:
+        return t, False
+    window = t[:hard]
+    cut = max(window.rfind("。"), window.rfind("．"))
+    if cut >= _MOA_MIN_LEN:
+        return t[: cut + 1].strip(), True
+    clipped = t[: hard - 1].rstrip() + "…"
+    return clipped, True
+
+
+def _pick_moa_intro_from_body181(body181: str) -> tuple[str, bool, str]:
+    """
+    18.1 本文から図解用 intro を組み立てる。
+    戻り値: (intro, truncated_flag, pick_reason)
+    """
+    sentences = _split_moa_sentences(body181)
+    if not sentences:
+        intro, trunc = _clip_intro_hard(body181, _MOA_T_HARD)
+        return intro, trunc, "no_sentence_split"
+
+    indexed = list(enumerate(sentences))
+    indexed.sort(key=lambda ix: (-_score_moa_sentence(ix[1]), ix[0]))
+    best_i, best_s = indexed[0]
+    s1 = _clip_one_sentence(best_s, _MOA_SENT_MAX)
+
+    chosen = [s1]
+    reason = f"best_score={_score_moa_sentence(best_s)}_idx={best_i}"
+
+    need_second = (len(s1) < _MOA_MIN_LEN) or (not _moa_has_verb(s1))
+    if need_second and len(indexed) > 1:
+        for j, sent in indexed[1:]:
+            if j == best_i:
+                continue
+            if sent.startswith(s1[: min(20, len(s1))]) or s1.startswith(sent[: min(20, len(sent))]):
+                continue
+            s2 = _clip_one_sentence(sent, _MOA_SENT_MAX)
+            merged = "".join(chosen) + s2
+            if len(merged) <= _MOA_T_HARD:
+                chosen.append(s2)
+                reason += f"+second_idx={j}"
+                break
+            if len("".join(chosen)) + len(s2) > _MOA_T_HARD:
+                s2_short = _clip_one_sentence(sent, max(40, _MOA_T_HARD - len("".join(chosen)) - 1))
+                if len("".join(chosen)) + len(s2_short) <= _MOA_T_HARD:
+                    chosen.append(s2_short)
+                    reason += f"+second_clipped_idx={j}"
+                break
+
+    merged = "".join(chosen)
+    if len(merged) > _MOA_T_HARD:
+        merged, trunc = _clip_intro_hard(merged, _MOA_T_HARD)
+        return merged, trunc, reason + "_hard_clip"
+
+    return merged, False, reason
+
+
 def structure_section18_moa(sec18: str) -> dict[str, Any] | None:
     """18 章から 18.1 作用機序の本文のみを抽出（図解のメイン表示用）。該当が無ければ None。"""
     raw = (sec18 or "").strip()
@@ -519,16 +656,20 @@ def structure_section18_moa(sec18: str) -> dict[str, Any] | None:
         return None
     t = _inject_sec18_structure_newlines(raw)
     m181 = re.search(
-        r"18[\.．]1\s*作用機序\s*(.*?)(?=18[\.．]2\s*抗腫瘍作用|$)",
+        r"18[\.．]1\s*作用機序\s*(.*?)(?=18[\.．]2\s+|$)",
         t,
         re.DOTALL | re.I,
     )
     body181 = (m181.group(1).strip() if m181 else "") or ""
+    body181 = _strip_sec18_body_if_18_2_leaked(body181)
     if not body181:
         return None
     body181 = _soften_if_reference_markers(body181)
-    intro = _clip_moa_body(body181, 1200)
-    return {"intro": intro, "cards": []}
+    intro, truncated, _reason = _pick_moa_intro_from_body181(body181)
+    out: dict[str, Any] = {"intro": intro, "cards": []}
+    if truncated:
+        out["intro_note"] = _MOA_GUIDANCE_NOTE
+    return out
 
 
 def _sec11_normalize_dots(s: str) -> str:

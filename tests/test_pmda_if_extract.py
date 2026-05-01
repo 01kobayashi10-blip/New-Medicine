@@ -5,6 +5,7 @@ from __future__ import annotations
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -233,6 +234,40 @@ class TestStructureSection18(unittest.TestCase):
         self.assertIn("HER2", d["intro"])
         self.assertEqual(d["cards"], [])
         self.assertNotIn("BT-474", d["intro"])
+        self.assertNotIn("intro_note", d)
+
+    def test_moa_stops_at_generic_18_2_not_only_antitumor(self) -> None:
+        """18.2 が抗腫瘍作用以外でも 18.1 で切れ、作用文を優先する。"""
+        sec18 = """18.1 作用機序
+カルシトニン遺伝子関連ペプチド(CGRP)は片頭痛の病態生理と関連する神経ペプチドである。
+アトゲパントはCGRPの受容体への結合を阻害し、CGRP受容体のシグナル伝達を阻害する23)。
+18.2 CGRP受容体に対する結合親和性
+アトゲパントは、ヒトCGRP受容体に親和性を示し、そのKi値は15–26pmol/Lであった(in vitro)。
+"""
+        d = pmda_if_extract.structure_section18_moa(sec18)
+        self.assertIsNotNone(d)
+        assert d is not None
+        self.assertIn("阻害", d["intro"])
+        self.assertIn("CGRP", d["intro"])
+        self.assertNotIn("結合親和性", d["intro"])
+        self.assertNotIn("Ki値", d["intro"])
+        self.assertLessEqual(len(d["intro"]), 330)
+
+    @patch.object(pmda_if_extract, "_MOA_T_HARD", 80)
+    def test_moa_truncation_adds_guidance_note(self) -> None:
+        """ハード上限で切った場合に誘導文が付く（テスト用に上限を一時的に下げる）。"""
+        pad = "ア" * 120
+        sec18 = f"""18.1 作用機序
+本剤はHER2のキナーゼ活性を阻害することにより腫瘍の増殖を抑制する{pad}。
+18.2 抗腫瘍作用
+次の文。
+"""
+        d = pmda_if_extract.structure_section18_moa(sec18)
+        self.assertIsNotNone(d)
+        assert d is not None
+        self.assertIn("intro_note", d)
+        self.assertIn("18.1 作用機序", d["intro_note"])
+        self.assertLessEqual(len(d["intro"]), 80)
 
 
 class TestStructureSection11(unittest.TestCase):

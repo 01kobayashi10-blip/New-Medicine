@@ -256,6 +256,14 @@
       border: 1px solid var(--slate-200);
       border-radius: 0.85rem;
     }
+    .moa-intro-note {
+      display: block;
+      margin-top: 0.65rem;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      color: var(--slate-600);
+      font-weight: 500;
+    }
     .moa-source {
       margin: 0.35rem 0 0;
       font-size: 0.72rem;
@@ -649,7 +657,7 @@
       </h2>
       {% if pharma18 %}
       <div class="moa-wrap">
-        <p class="moa-intro">{{ pharma18.intro }}</p>
+        <p class="moa-intro">{{ pharma18.intro }}{% if pharma18.intro_note %}<span class="moa-intro-note">{{ pharma18.intro_note }}</span>{% endif %}</p>
         <p class="moa-source">出典：添付文書「18. 薬効薬理」</p>
       </div>
       {% else %}
