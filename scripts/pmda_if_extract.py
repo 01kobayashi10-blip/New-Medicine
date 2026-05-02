@@ -1008,7 +1008,7 @@ def _split_sec17_trial_paragraphs_core(rest: str) -> tuple[str, str, str]:
     design = s[: m_key.start()].strip()
     tail = _trim_sec17_figure_noise(s[m_key.start() :])
     m_ae = re.search(
-        r"(本剤群\d+例において、|副作用は日本人集団|(?<=[。．])\s*副作用は\d*例中)",
+        r"(本剤群\d+例において、|副作用は日本人集団|(?<=[。．])\s*副作用は\d*例中|副作用発現頻度)",
         tail,
     )
     if m_ae:
@@ -1077,6 +1077,12 @@ def _primary_endpoint_label_from_sec17(result: str) -> str:
     )
     if m:
         return m.group(1)
+    m_mmd = re.search(
+        r"主要評価項目である[^。]{0,300}?(平均MMDのベースラインからの変化量)(?:は|を|が)",
+        s,
+    )
+    if m_mmd:
+        return m_mmd.group(1).strip()[:80]
     m2 = re.search(r"主要評価項目である[^。]{0,220}?((?:独立中央判定の評価に基づく)?奏効率)(?:は|を)", s)
     if m2:
         return m2.group(1).strip()[:80]
@@ -1614,6 +1620,34 @@ def _enrich_sec17_trial_dict(
     return out
 
 
+def _match_sec17_trial_heading_line(b: str) -> re.Match[str] | None:
+    """
+    17.1.x 行頭の試験見出しのみを取り出す。
+    _inject_sec17_subsection_newlines 内の NFKC が改行を潰すため、
+    「1 行目 = 見出し」のヒューリスティック（[^\\n]+）は本文を吸い込み失敗する。
+    括弧終わり（] ) ））・:RELEASE(...)・試験番号:...試験 等で切る。
+    """
+    s = (b or "").strip()
+    if not s:
+        return None
+    m = re.match(r"^(17[\.．]1[\.．]\d+\s+.+?試験\])", s)
+    if m:
+        return m
+    m = re.match(r"^(17[\.．]1[\.．]\d+\s+.+?試験:RELEASE\([^)]+\))", s)
+    if m:
+        return m
+    m = re.match(r"^(17[\.．]1[\.．]\d+\s+.+?試験\))", s)
+    if m:
+        return m
+    m = re.match(r"^(17[\.．]1[\.．]\d+\s+.+?試験）)", s)
+    if m:
+        return m
+    m = re.match(r"^(17[\.．]1[\.．]\d+\s+.+?:\s*[A-Z0-9][A-Za-z0-9\-]{3,40}試験)", s)
+    if m:
+        return m
+    return re.match(r"^(17[\.．]1[\.．]\d+\s+[^\n]+)", s)
+
+
 def structure_section17_trials(sec17: str) -> dict[str, Any] | None:
     """
     17.1.x 試験見出しでブロック分割し、カード表示用データを返す。
@@ -1636,9 +1670,7 @@ def structure_section17_trials(sec17: str) -> dict[str, Any] | None:
             if not lead and re.match(r"^17[\.．]1\s", b):
                 lead = _clip_moa_body(b, 360)
             continue
-        m_ln = re.match(r"^(17[\.．]1[\.．]\d+\s+.+?試験\])", b)
-        if not m_ln:
-            m_ln = re.match(r"^(17[\.．]1[\.．]\d+\s+[^\n]+)", b)
+        m_ln = _match_sec17_trial_heading_line(b)
         if not m_ln:
             continue
         heading = re.sub(r"\s+", " ", m_ln.group(1).strip())

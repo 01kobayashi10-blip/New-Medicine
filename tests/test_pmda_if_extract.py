@@ -252,6 +252,36 @@ class TestStructureSection17(unittest.TestCase):
         self.assertIn("612", t0.get("population_line", ""))
         self.assertIn("二重盲検", t0.get("protocol_line", ""))
 
+    def test_trials_split_release_paren_heading_after_nfkc(self) -> None:
+        """試験名が ] で終わらない（試験) / :RELEASE(...) / :3101-...試験）でも見出しを切れる。"""
+        sec17 = (
+            "17.1 有効性及び安全性に関する試験\n"
+            "17.1.1 国内第II/III相試験:RELEASE(M22-056試験)\n"
+            "18歳以上の患者523例を対象とした二重盲検試験を実施した。\n"
+            "主要評価項目である投与開始12週間における平均MMDのベースラインからの変化量は表1の通りであった。\n"
+            "副作用発現頻度は10.3%であった。\n"
+            "17.1.2 国際共同第III相試験:PROGRESS(3101-303-002試験)\n"
+            "慢性片頭痛患者773例を対象とした。\n"
+            "主要評価項目である平均MMDのベースラインからの変化量は表2の通りであった。\n"
+            "副作用発現頻度は20.2%であった。\n"
+            "17.1.3 国内第III相長期投与試験:3101-306-002試験\n"
+            "長期投与試験の本文。\n"
+            "主要評価項目である52週間のMMDの推移を図1に示した。\n"
+            "副作用発現頻度は16.7%であった。\n"
+        )
+        d = pmda_if_extract.structure_section17_trials(sec17)
+        self.assertIsNotNone(d)
+        assert d is not None
+        self.assertEqual(len(d["trials"]), 3)
+        self.assertIn("RELEASE", d["trials"][0]["heading_display"])
+        self.assertIn("PROGRESS", d["trials"][1]["heading_display"])
+        self.assertIn("3101-306-002", d["trials"][2]["heading_display"])
+        self.assertIn(
+            "平均MMDのベースラインからの変化量",
+            d["trials"][0].get("primary_endpoint_label", ""),
+        )
+        self.assertIn("副作用発現頻度", d["trials"][0].get("ae_note", ""))
+
 
 class TestStructureSection18(unittest.TestCase):
     def test_moa_intro_only_from_tucatinib_like_text(self) -> None:
