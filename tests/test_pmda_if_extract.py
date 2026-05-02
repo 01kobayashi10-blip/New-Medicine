@@ -57,6 +57,46 @@ class TestExtractPdfPairs(unittest.TestCase):
 
 
 class TestSummarizeCards(unittest.TestCase):
+    def test_generic_fallback_inn_from_section18_when_sec3_empty(self) -> None:
+        sec18 = """18.1 作用機序
+カルシトニン遺伝子関連ペプチド(CGRP)は片頭痛の病態生理と関連する神経ペプチドである。
+アトゲパントはCGRPの受容体への結合を阻害し、CGRP受容体のシグナル伝達を阻害する。
+18.2 CGRP受容体に対する結合親和性
+アトゲパントは、ヒトCGRP受容体に親和性を示した。
+"""
+        sec = {
+            "pre_ch4_raw": "",
+            "section_ident": "",
+            "section_3": "",
+            "section_4": "片頭痛発作の発症抑制",
+            "section_17": "",
+            "section_18": sec18,
+            "section_11": "",
+            "section_6710": "",
+        }
+        r = pmda_if_extract.summarize_infographic_cards(
+            rss_title="アッヴィ　片頭痛発作の発症抑制薬・アクイプタ錠を発売",
+            sections=sec,
+        )
+        self.assertEqual(r["card_generic"], "アトゲパント")
+
+    def test_generic_strips_salt_suffix_from_section3(self) -> None:
+        sec = {
+            "pre_ch4_raw": "",
+            "section_ident": "",
+            "section_3": "3.1 組成\n有効成分 1錠中 ツカチニブ エタノール付加物52.4mg\n",
+            "section_4": "化学療法歴のあるHER2陽性の手術不能又は再発乳癌における。",
+            "section_17": "",
+            "section_18": "",
+            "section_11": "",
+            "section_6710": "",
+        }
+        r = pmda_if_extract.summarize_infographic_cards(
+            rss_title="ファイザー　HER2陽性乳がん治療薬・ツカイザ錠を発売",
+            sections=sec,
+        )
+        self.assertEqual(r["card_generic"], "ツカチニブ")
+
     def test_generic_from_prech4_ki_line(self) -> None:
         sec = {
             "pre_ch4_raw": "キ. 基準名：ツカチニブエタノール付加物\nウ. 承認\n1. 警告\n注意",

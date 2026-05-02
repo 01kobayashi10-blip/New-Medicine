@@ -649,11 +649,20 @@ def _pick_moa_intro_from_body181(body181: str) -> tuple[str, bool, str]:
     return merged, False, reason
 
 
-def structure_section18_moa(sec18: str) -> dict[str, Any] | None:
-    """18 章から 18.1 作用機序の本文のみを抽出（図解のメイン表示用）。該当が無ければ None。"""
+def _cleanup_moa_intro_punctuation(s: str) -> str:
+    """PDF 由来の読点重複（、、）や末尾の不自然な読点を整える。"""
+    t = (s or "").strip()
+    t = re.sub(r"[、,]{2,}", "、", t)
+    t = re.sub(r"(?:[、,])+\s*$", "。", t)
+    t = re.sub(r"。{2,}", "。", t)
+    return t.strip()
+
+
+def _sec18_extract_181_body(sec18: str) -> str:
+    """18.1 作用機序ブロックの本文（18.2 直前まで）。抽出失敗時は空文字。"""
     raw = (sec18 or "").strip()
-    if not raw or len(raw) < 30:
-        return None
+    if not raw:
+        return ""
     t = _inject_sec18_structure_newlines(raw)
     m181 = re.search(
         r"18[\.．]1\s*作用機序\s*(.*?)(?=18[\.．]2\s+|$)",
@@ -661,15 +670,102 @@ def structure_section18_moa(sec18: str) -> dict[str, Any] | None:
         re.DOTALL | re.I,
     )
     body181 = (m181.group(1).strip() if m181 else "") or ""
-    body181 = _strip_sec18_body_if_18_2_leaked(body181)
+    return _strip_sec18_body_if_18_2_leaked(body181)
+
+
+def structure_section18_moa(sec18: str) -> dict[str, Any] | None:
+    """18 章から 18.1 作用機序の本文のみを抽出（図解のメイン表示用）。該当が無ければ None。"""
+    raw = (sec18 or "").strip()
+    if not raw or len(raw) < 30:
+        return None
+    body181 = _sec18_extract_181_body(raw)
     if not body181:
         return None
     body181 = _soften_if_reference_markers(body181)
     intro, truncated, _reason = _pick_moa_intro_from_body181(body181)
+    intro = _cleanup_moa_intro_punctuation(intro)
     out: dict[str, Any] = {"intro": intro, "cards": []}
     if truncated:
         out["intro_note"] = _MOA_GUIDANCE_NOTE
     return out
+
+
+_INN_SALT_SUFFIXES: tuple[str, ...] = (
+    "エタノール付加物",
+    "一水和物",
+    "二水和物",
+    "三水合物",
+    "水和物",
+    "塩酸塩",
+    "硫酸塩",
+    "酒石酸塩",
+    "マレイン酸塩",
+    "メシル酸塩",
+    "付加物",
+    "山嵐酸塩",
+    "乳糖水和物",
+)
+
+_INN_SKIP_PREFIXES: tuple[str, ...] = (
+    "本剤",
+    "当薬",
+    "カルシトニン",
+    "ヒト",
+    "血清",
+    "血漿",
+    "細胞",
+    "動物",
+    "対照",
+    "試験",
+    "成人",
+    "小児",
+    "患者",
+    "日本人",
+    "プラセボ",
+    "生理食塩",
+    "蒸留水",
+)
+
+
+def _strip_inn_salt_suffixes(name: str) -> str:
+    """塩・水和物・付加物等を末尾から除き、INN 表示用のコアに寄せる。"""
+    n = _nfkc((name or "").strip())
+    n = re.sub(r"\s+", "", n)
+    if not n:
+        return ""
+    changed = True
+    while changed:
+        changed = False
+        for suf in _INN_SALT_SUFFIXES:
+            if len(n) > len(suf) + 1 and n.endswith(suf):
+                n = n[: -len(suf)].strip()
+                changed = True
+                break
+    return n[:90] if n else ""
+
+
+def _inn_like_from_sec181_body(body181: str) -> str:
+    """18.1 本文先頭付近から、『○○は』型のカタカナ一般名候補を1件拾う。"""
+    if not (body181 or "").strip():
+        return ""
+    t = _nfkc(re.sub(r"\s+", " ", body181.strip()))
+    for m in re.finditer(r"([ァ-ヶー・]{2,14})\s*(?:は|を|が)", t):
+        cand = m.group(1).strip()
+        if len(cand) < 2 or len(cand) > 14:
+            continue
+        if not re.match(r"^[ァ-ヶー・]+$", cand):
+            continue
+        if any(cand.startswith(p) for p in _INN_SKIP_PREFIXES):
+            continue
+        return cand
+    return ""
+
+
+def _inn_core_fallback_from_section18(sec18: str) -> str:
+    """第3章が空のとき、18.1 から INN 相当のコア名を推定する。"""
+    body = _sec18_extract_181_body(sec18)
+    raw = _inn_like_from_sec181_body(body)
+    return _strip_inn_salt_suffixes(raw)
 
 
 def _sec11_normalize_dots(s: str) -> str:
@@ -1585,9 +1681,14 @@ def summarize_infographic_cards(*, rss_title: str, sections: dict[str, str]) -> 
     pre_ch4 = (sections.get("pre_ch4_raw") or "").strip()
     sec3 = sections.get("section_3") or ""
     sec4 = sections.get("section_4") or ""
+    sec18 = sections.get("section_18") or ""
     brand = _brand_from_rss_title(rss_title)
     head_for_generic = pre_ch4 or ident
     generic = _generic_from_section3(sec3) or _generic_from_ident(head_for_generic)
+    if not (generic or "").strip():
+        generic = _inn_core_fallback_from_section18(sec18)
+    if generic:
+        generic = _strip_inn_salt_suffixes(generic)
     yakka = _yakka_bunrui(pre_ch4 or ident, sec3, sec4)
     eff = _efficacy_one_liner(sec4)
     preview_lim = 1600
