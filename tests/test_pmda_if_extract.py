@@ -665,6 +665,41 @@ y
         self.assertIsNotNone(r)
         self.assertTrue(any("300mg" in b and "ツカチニブ" in b for b in r["bullets"]))
 
+    def test_format_section_6710_fallback_joins_soft_breaks(self) -> None:
+        raw = "通常、成人には\nアトゲパントとして"
+        out = pmda_if_extract.format_section_6710_fallback(raw)
+        self.assertIn("通常、成人には", out)
+        self.assertIn("アトゲパントとして", out)
+        self.assertNotIn("\nアトゲパント", out)
+
+    def test_structure_dosage_memo_atogepant_like(self) -> None:
+        """「1回」が用量直前に無い表記・腎7.2・CYP3A7.3・OATP7.4 を拾う。"""
+        raw = """
+6. 用法及び用量
+通常、成人にはアトゲパントとして60mgを1日1回経口投与する。
+
+7. 用法及び用量に関連する注意
+7.1 本剤投与中は症状の経過を十分に観察し、以下のとおり投与継続の可否を考慮すること。
+7.2 重度の腎機能障害患者及び末期腎不全患者(クレアチニンクリアンスが30mL/min未満)では、本剤10mgを1日1回経口投与すること。
+7.3 強いCYP3A阻害剤と併用する場合は、本剤10mgを1日1回経口投与すること。
+7.4 OATP阻害剤と併用する場合は、本剤30mgを1日1回経口投与すること。
+
+10. 相互作用
+10.2 併用注意(併用に注意すること)
+強いCYP3A阻害剤 本剤の副作用が増強されるおそれがある。
+"""
+        r = pmda_if_extract.structure_dosage_memo(raw)
+        self.assertIsNotNone(r)
+        joined = " ".join(r["bullets"])
+        self.assertIn("60mg", joined)
+        self.assertIn("アトゲパント", joined)
+        self.assertIn("7.2", joined)
+        self.assertIn("10mg", joined)
+        self.assertIn("CYP3A", joined)
+        self.assertIn("OATP", joined)
+        self.assertIn("30mg", joined)
+        self.assertTrue(any("観察" in b or "投与継続" in b for b in r["bullets"]))
+
 
 if __name__ == "__main__":
     unittest.main()

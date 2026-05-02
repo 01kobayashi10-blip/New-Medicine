@@ -87,6 +87,7 @@ def render_html(
     section_17: str = "",
     section_11: str = "",
     section_6710: str = "",
+    section_6710_plain: str = "",
     card_brand: str = "",
     card_generic: str = "",
     card_yakka: str = "",
@@ -116,6 +117,7 @@ def render_html(
         section_17=section_17,
         section_11=section_11,
         section_6710=section_6710,
+        section_6710_plain=section_6710_plain,
         card_brand=card_brand,
         card_generic=card_generic,
         card_yakka=card_yakka,
@@ -143,6 +145,15 @@ def _empty_sections() -> dict[str, str]:
 
 def _cards_for_title(title: str, sec: dict[str, str]) -> dict[str, str]:
     return pmda_if_extract.summarize_infographic_cards(rss_title=title, sections=sec)
+
+
+def _section_6710_plain_for_template(raw: str, pharma6710: dict | None) -> str:
+    """箇条書き表示時は未使用。フォールバック時は改行結合済みテキストを返す。"""
+    s = raw or ""
+    if pharma6710 and pharma6710.get("bullets"):
+        return s
+    fb = pmda_if_extract.format_section_6710_fallback(s)
+    return fb if fb.strip() else s
 
 
 def _http_timeout() -> int:
@@ -210,6 +221,7 @@ def process_item(item: dict, overrides: dict) -> tuple[str | None, str]:
         pharma17 = pmda_if_extract.structure_section17_trials(sec.get("section_17") or "")
         pharma11 = pmda_if_extract.structure_section11_summary(sec.get("section_11") or "")
         pharma6710 = pmda_if_extract.structure_dosage_memo(sec.get("section_6710") or "")
+        s6710 = sec.get("section_6710") or ""
         html = render_html(
             title_display=title[:200] + ("…" if len(title) > 200 else ""),
             stable_id=sid,
@@ -222,7 +234,8 @@ def process_item(item: dict, overrides: dict) -> tuple[str | None, str]:
             section_17=sec["section_17"],
             section_18=sec["section_18"],
             section_11=sec["section_11"],
-            section_6710=sec["section_6710"],
+            section_6710=s6710,
+            section_6710_plain=_section_6710_plain_for_template(s6710, pharma6710),
             card_brand=cards["card_brand"],
             card_generic=cards["card_generic"],
             card_yakka=cards["card_yakka"],
@@ -298,6 +311,7 @@ def process_item(item: dict, overrides: dict) -> tuple[str | None, str]:
     pharma17 = pmda_if_extract.structure_section17_trials(sec.get("section_17") or "")
     pharma11 = pmda_if_extract.structure_section11_summary(sec.get("section_11") or "")
     pharma6710 = pmda_if_extract.structure_dosage_memo(sec.get("section_6710") or "")
+    s6710 = sec.get("section_6710") or ""
     html = render_html(
         title_display=title[:200] + ("…" if len(title) > 200 else ""),
         stable_id=sid,
@@ -310,7 +324,8 @@ def process_item(item: dict, overrides: dict) -> tuple[str | None, str]:
         section_17=sec["section_17"],
         section_18=sec["section_18"],
         section_11=sec["section_11"],
-        section_6710=sec["section_6710"],
+        section_6710=s6710,
+        section_6710_plain=_section_6710_plain_for_template(s6710, pharma6710),
         card_brand=cards["card_brand"],
         card_generic=cards["card_generic"],
         card_yakka=cards["card_yakka"],

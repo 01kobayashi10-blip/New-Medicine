@@ -1686,6 +1686,23 @@ def _dosage_sec6_body_from_merged(merged: str) -> str:
     return merged.strip()
 
 
+def _dosage_mg_day_pair(s: str) -> tuple[str, str] | None:
+    """小節本文から用量(mg)と1日回数を拾う（PDF 改行を跨ぐ場合あり）。"""
+    t = re.sub(r"\s+", " ", (s or "").strip())
+    if not t:
+        return None
+    m = re.search(r"1回\s*(\d+)\s*m[gｇ].{0,200}?1日\s*(\d+)\s*回", t, re.I | re.DOTALL)
+    if m:
+        return m.group(1), m.group(2)
+    m = re.search(r"本剤\s*(\d+)\s*m[gｇ]\s*を\s*1日\s*(\d+)\s*回", t, re.I)
+    if m:
+        return m.group(1), m.group(2)
+    m = re.search(r"(\d+)\s*m[gｇ]\s*を\s*1日\s*(\d+)\s*回", t, re.I)
+    if m:
+        return m.group(1), m.group(2)
+    return None
+
+
 def _dosage_standard_bullet(sec6_body: str) -> str | None:
     """6 章本文から標準用法の1行メモを組み立てる。"""
     raw = (sec6_body or "").strip()
@@ -1697,9 +1714,39 @@ def _dosage_standard_bullet(sec6_body: str) -> str | None:
         return None
     dose_m = re.search(r"1回\s*(\d+)\s*m[gｇ]", line, re.I)
     day_m = re.search(r"1日\s*(\d+)\s*回", line)
-    if not dose_m or not day_m:
-        return None
-    dose, nday = dose_m.group(1), day_m.group(1)
+    dose: str | None
+    nday: str | None
+    if dose_m and day_m:
+        dose, nday = dose_m.group(1), day_m.group(1)
+    else:
+        alt = re.search(
+            r"(?:通常、|通常)?(?:成人|小児等|小児|患者)には\s*"
+            r"([^\s、。]+(?:\s+[^\s、。]+){0,4}?)\s*として\s*"
+            r"(\d+)\s*m[gｇ]\s*を\s*1日\s*(\d+)\s*回",
+            line,
+            re.I,
+        )
+        if not alt:
+            return None
+        dose, nday = alt.group(2), alt.group(3)
+        ing_for_alt = alt.group(1).strip()
+        combo_m = re.search(r"(.+?(?:との併用において|併用において))", line)
+        if combo_m:
+            combo = combo_m.group(1).strip()
+            bullet = f"{combo}、通常成人には{ing_for_alt}として{dose}mgを1日{nday}回経口"
+        else:
+            bullet = f"通常成人には{ing_for_alt}として{dose}mgを1日{nday}回経口"
+        if not bullet.endswith("経口") and "経口投与" in line:
+            bullet += "投与"
+        elif not re.search(r"経口(投与)?$", bullet):
+            bullet += "経口"
+        bullet += "。"
+        if "適宜減量" in line or "減量する" in line:
+            bullet += "患者の状態により適宜減量（添付文書「6」「7.3」）。"
+        else:
+            bullet += "（添付文書「6」）。"
+        return bullet
+
     ing_m = re.search(
         r"(?:通常、|通常)?(?:成人|小児等|小児|患者)には\s*([^\s、。]+(?:\s+[^\s、。]+){0,4}?)\s*として\s*1回",
         line,
@@ -1733,32 +1780,73 @@ def _dosage_standard_bullet(sec6_body: str) -> str | None:
 def _dosage_hepatic_bullet(b72: str) -> str | None:
     if not b72 or ("肝" not in b72 and "Child" not in b72):
         return None
-    dm = re.search(r"1回\s*(\d+)\s*m[gｇ].{0,120}?1日\s*(\d+)\s*回", b72, re.I | re.DOTALL)
-    if dm:
-        d1, nfreq = dm.group(1), dm.group(2)
-    else:
+    pair = _dosage_mg_day_pair(b72)
+    if not pair:
         dm2 = re.search(r"1回\s*(\d+)\s*m[gｇ]", b72, re.I)
         if not dm2:
             return None
         d1 = dm2.group(1)
         nfreq_m = re.search(r"1日\s*(\d+)\s*回", b72)
         nfreq = nfreq_m.group(1) if nfreq_m else "2"
+    else:
+        d1, nfreq = pair
     return (
         f"重度の肝機能障害（Child-Pugh 分類 C）では開始用量 1 回 {d1}mg を "
         f"1 日 {nfreq} 回（「7.2」）。"
     )
 
 
+def _dosage_renal_bullet(b72: str) -> str | None:
+    """7.2 が腎機能に関する注意のとき（肝・Child が主でない）。"""
+    if not b72 or "腎" not in b72:
+        return None
+    if "肝" in b72 or "Child" in b72:
+        return None
+    pair = _dosage_mg_day_pair(b72)
+    if not pair:
+        return None
+    d1, nfreq = pair
+    return f"重度の腎機能障害等の患者では本剤 {d1}mg を1日{nfreq}回（「7.2」）。"
+
+
 def _dosage_cyp_bullet(b74: str) -> str | None:
     if not b74 or "CYP2C8" not in b74:
         return None
-    dm = re.search(r"1回\s*(\d+)\s*m[gｇ].{0,120}?1日\s*(\d+)\s*回", b74, re.I | re.DOTALL)
-    if not dm:
+    pair = _dosage_mg_day_pair(b74)
+    if not pair:
         return None
     return (
-        f"強い CYP2C8 阻害剤併用時は開始用量 1 回 {dm.group(1)}mg を "
-        f"1 日 {dm.group(2)} 回（「7.4」）。"
+        f"強い CYP2C8 阻害剤併用時は開始用量 1 回 {pair[0]}mg を "
+        f"1 日 {pair[1]} 回（「7.4」）。"
     )
+
+
+def _dosage_cyp3a_bullet(b73: str) -> str | None:
+    if not b73 or "CYP3A" not in b73:
+        return None
+    pair = _dosage_mg_day_pair(b73)
+    if not pair:
+        return None
+    return (
+        f"強い CYP3A 阻害剤併用時は本剤 {pair[0]}mg を1日{pair[1]}回（「7.3」）。"
+    )
+
+
+def _dosage_oatp_bullet(b74: str) -> str | None:
+    if not b74 or "OATP" not in b74 or "CYP2C8" in b74:
+        return None
+    pair = _dosage_mg_day_pair(b74)
+    if not pair:
+        return None
+    return f"OATP 阻害剤併用時は本剤 {pair[0]}mg を1日{pair[1]}回（「7.4」）。"
+
+
+def format_section_6710_fallback(section_6710: str) -> str:
+    """図解フォールバック用: PDF 由来改行を結合し NFKC 正規化する。"""
+    raw = (section_6710 or "").strip()
+    if not raw:
+        return ""
+    return unicodedata.normalize("NFKC", _sec6710_merge_broken_lines(raw)).strip()
 
 
 def structure_dosage_memo(section_6710: str) -> dict[str, Any] | None:
@@ -1784,16 +1872,37 @@ def structure_dosage_memo(section_6710: str) -> dict[str, Any] | None:
     hb = _dosage_hepatic_bullet(b72)
     if hb:
         bullets.append(hb)
+    else:
+        rb = _dosage_renal_bullet(b72)
+        if rb:
+            bullets.append(rb)
+
+    b73 = _dosage_extract_7_subsection(merged, "3")
+    c3 = _dosage_cyp3a_bullet(b73)
+    if c3:
+        bullets.append(c3)
 
     b74 = _dosage_extract_7_subsection(merged, "4")
     cb = _dosage_cyp_bullet(b74)
     if cb:
         bullets.append(cb)
+    else:
+        ob = _dosage_oatp_bullet(b74)
+        if ob:
+            bullets.append(ob)
 
     b71 = _dosage_extract_7_subsection(merged, "1")
     b75 = _dosage_extract_7_subsection(merged, "5")
     note71 = ""
     if b71 and ("単独" in b71 or "確立" in b71 or "有効性" in b71):
+        first = b71.split("。")[0].strip()
+        frag = (first + "。") if first and not first.endswith("。") else (first or "")
+        frag = _clip_moa_body(frag, 220)
+        if frag:
+            note71 = frag + "（「7.1」）"
+    elif b71 and len(b71) >= 40 and (
+        "観察" in b71 or "投与継続" in b71 or "投与中止" in b71
+    ):
         first = b71.split("。")[0].strip()
         frag = (first + "。") if first and not first.endswith("。") else (first or "")
         frag = _clip_moa_body(frag, 220)
