@@ -780,10 +780,24 @@ def _sec11_normalize_dots(s: str) -> str:
     return "\n".join(out)
 
 
+# 短い器官系ラベル（MedDRA 表の行見出しで「…障害」で終わらないもの）
+_SEC11_SHORT_SOC_LABELS = frozenset(
+    {
+        "消化器",
+        "呼吸器",
+        "循環器",
+        "泌尿器",
+        "生殖器",
+        "内分泌系",
+        "免疫系",
+    }
+)
+
+
 def _sec11_looks_soc_header(s: str) -> bool:
-    """11.2 以降の MedDRA SOC 見出し行の簡易判定（誤検出を減らす）。"""
+    """11.2 以降の MedDRA SOC / 器官系行見出しの簡易判定（誤検出を減らす）。"""
     s = s.strip()
-    if not s or len(s) > 56 or len(s) < 4:
+    if not s or len(s) > 56 or len(s) < 2:
         return False
     if re.match(r"^11\.", s):
         return False
@@ -791,7 +805,9 @@ def _sec11_looks_soc_header(s: str) -> bool:
         return False
     if re.search(r"\([\d.]+\s*[%％]", s):
         return False
-    return bool(re.search(r"(障害|疾患|寄生虫症)$", s))
+    if s in _SEC11_SHORT_SOC_LABELS:
+        return True
+    return bool(re.search(r"(障害|疾患|寄生虫症|全身症状|臨床検査値)$", s))
 
 
 def _sec11_line_starts_new_segment(line: str) -> bool:
@@ -842,6 +858,116 @@ def _sec11_merge_broken_lines(text: str) -> list[str]:
     return out
 
 
+def _sec11_is_band_table_header_line(ln: str) -> bool:
+    """11.2 の「1%以上」「0.1〜1%未満」列見出し行（頻度帯表）。"""
+    u = unicodedata.normalize("NFKC", ln or "")
+    u_compact = re.sub(r"\s+", "", u)
+    if len(u) > 96:
+        return False
+    if ("1%" not in u_compact and "1％" not in u_compact) or "以上" not in u_compact:
+        return False
+    if "未満" not in u_compact:
+        return False
+    # 2列目が「0.1（〜）1%未満」系（0.1 と 1 の間に ～ 等が入る）。5%帯の「1%以上~5%未満」には 0.1 が無い想定。
+    return "0.1" in u_compact or "0．1" in u_compact
+
+
+def _sec11_split_glued_11_2_and_band_header(lines: list[str]) -> list[str]:
+    """
+    PDF 結合で「11.2 その他の副作用」と「1%以上 0.1〜…」が同一行になっている場合に分割する。
+    """
+    if not lines or not re.match(r"^11\.2", lines[0].strip()):
+        return lines
+    first = lines[0].strip()
+    m = re.search(r"1\s*[%％]\s*以上", first)
+    if not m:
+        return lines
+    tail_from_band = first[m.start() :]
+    if "未満" not in tail_from_band:
+        return lines
+    if "0.1" not in tail_from_band and "0．1" not in tail_from_band:
+        return lines
+    prefix = first[: m.start()].strip()
+    rest = tail_from_band.strip()
+    if prefix and rest:
+        return [prefix, rest] + list(lines[1:])
+    return lines
+
+
+def _sec11_find_band_table_header(tail_lines: list[str], j: int) -> tuple[bool, int, list[str]]:
+    """
+    tail_lines[j:] 内で列見出し行を探す。
+    Returns (found, advance_lines, band_labels)。advance_lines は j から進める行数。
+    """
+    window = min(8, len(tail_lines) - j)
+    for k in range(window):
+        if _sec11_is_band_table_header_line(tail_lines[j + k]):
+            return True, k + 1, ["1%以上", "0.1～1%未満"]
+    return False, 0, []
+
+
+_SEC11_DASH_CELL = frozenset(
+    {"", "―", "—", "－", "-", "ー", "‐", "～", "~", "…", "‥", "－", "─"}
+)
+
+
+def _sec11_split_symptom_tokens_plain(s: str) -> list[str]:
+    if not (s or "").strip():
+        return []
+    parts = re.split(r"[、，,]", s)
+    out: list[str] = []
+    for p in parts:
+        q = unicodedata.normalize("NFKC", p.strip())
+        if len(q) < 2:
+            continue
+        if q in _SEC11_DASH_CELL:
+            continue
+        out.append(q)
+    return out
+
+
+def _sec11_extract_table_row_symptoms(
+    body: str, soc: str, bands: list[str], budget: list[int]
+) -> list[dict[str, str]]:
+    """頻度帯列表の1行相当（括弧%なし・列はダッシュ区切り）から other_items を組み立てる。"""
+    if budget[0] <= 0:
+        return []
+    raw = re.sub(r"[ \t\u3000]+", " ", (body or "").strip())
+    if not raw:
+        return []
+    out: list[dict[str, str]] = []
+    parts = re.split(r"\s*(?:—|－|―|‐|-|~|〜)\s*", raw, maxsplit=1)
+    cols = [parts[0].strip(), parts[1].strip()] if len(parts) == 2 else [raw, ""]
+    for i, cell in enumerate(cols):
+        if budget[0] <= 0:
+            break
+        c = cell.strip()
+        if not c or c in _SEC11_DASH_CELL:
+            continue
+        band = bands[i] if i < len(bands) else bands[-1]
+        cell_spaced = re.sub(r"\s+", " ", c)
+        pct_hits: list[dict[str, str]] = []
+        for m in _RE_SEC11_SYM_PCT.finditer(cell_spaced):
+            name = re.sub(r"\s+", "", m.group(1).strip())
+            pct = m.group(2).strip().replace("％", "%")
+            if len(name) < 2:
+                continue
+            pct_hits.append({"symptom": f"{name}（{pct}）", "soc": soc})
+        if pct_hits:
+            for row in pct_hits:
+                if budget[0] <= 0:
+                    break
+                out.append(row)
+                budget[0] -= 1
+            continue
+        for tok in _sec11_split_symptom_tokens_plain(c):
+            if budget[0] <= 0:
+                break
+            out.append({"symptom": f"{tok}（{band}）", "soc": soc})
+            budget[0] -= 1
+    return out
+
+
 _RE_SEC11_SYM_PCT = re.compile(
     r"([\u3040-\u30ff\u4e00-\u9fffA-Za-z0-9／/・\-‐\s]{1,48}?)\s*[\(（]\s*([\d.]+\s*[%％])\s*[\)）]"
 )
@@ -863,7 +989,7 @@ def _sec11_extract_symptom_bullets(body: str, soc: str, *, budget: list[int]) ->
         budget[0] -= 1
         if budget[0] <= 0:
             break
-    if not out and raw and len(raw) >= 6 and budget[0] > 0:
+    if not out and raw and len(raw) >= 2 and budget[0] > 0:
         frag = _clip_moa_body(raw, 72)
         if frag and not re.match(r"^5%以上", frag):
             out.append({"symptom": frag, "soc": soc})
@@ -883,7 +1009,7 @@ def structure_section11_summary(sec11: str) -> dict[str, Any] | None:
     if not lines:
         return None
     text = "\n".join(lines)
-    m12 = re.search(r"(?m)^\s*11\.2\s+", text)
+    m12 = re.search(r"(?m)^\s*11\.2\s*", text)
     if not m12:
         return None
     head = text[: m12.start()].strip()
@@ -924,6 +1050,7 @@ def structure_section11_summary(sec11: str) -> dict[str, Any] | None:
         )
 
     tail_lines = [ln.strip() for ln in tail.split("\n") if ln.strip()]
+    tail_lines = _sec11_split_glued_11_2_and_band_header(tail_lines)
     j = 0
     if tail_lines and re.match(r"^11\.2", tail_lines[0]):
         j = 1
@@ -935,6 +1062,10 @@ def structure_section11_summary(sec11: str) -> dict[str, Any] | None:
             j += 1
             continue
         break
+
+    table_mode, table_advance, col_bands = _sec11_find_band_table_header(tail_lines, j)
+    if table_mode:
+        j += table_advance
 
     other_items: list[dict[str, str]] = []
     budget = [14]
@@ -948,9 +1079,16 @@ def structure_section11_summary(sec11: str) -> dict[str, Any] | None:
         if _sec11_looks_soc_header(ln):
             if cur_soc and cur_parts:
                 body = " ".join(cur_parts)
-                other_items.extend(
-                    _sec11_extract_symptom_bullets(body, cur_soc, budget=budget)
-                )
+                if table_mode:
+                    other_items.extend(
+                        _sec11_extract_table_row_symptoms(
+                            body, cur_soc, col_bands, budget
+                        )
+                    )
+                else:
+                    other_items.extend(
+                        _sec11_extract_symptom_bullets(body, cur_soc, budget=budget)
+                    )
             cur_soc = ln.strip()
             cur_parts = []
         else:
@@ -958,9 +1096,14 @@ def structure_section11_summary(sec11: str) -> dict[str, Any] | None:
         j += 1
     if cur_soc and cur_parts:
         body = " ".join(cur_parts)
-        other_items.extend(
-            _sec11_extract_symptom_bullets(body, cur_soc, budget=budget)
-        )
+        if table_mode:
+            other_items.extend(
+                _sec11_extract_table_row_symptoms(body, cur_soc, col_bands, budget)
+            )
+        else:
+            other_items.extend(
+                _sec11_extract_symptom_bullets(body, cur_soc, budget=budget)
+            )
 
     if not serious_items and not other_items:
         return None

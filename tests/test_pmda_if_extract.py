@@ -383,6 +383,50 @@ class TestStructureSection11(unittest.TestCase):
         self.assertTrue(any(x["soc"] == "胃腸障害" for x in d["other_items"]))
         self.assertIn("5%以上", d["other_title"])
 
+    def test_aquipta_style_freq_band_table(self) -> None:
+        """11.2 が「1%以上 / 0.1〜1%未満」列表で括弧%がない様式（アクイプタ等）。"""
+        s = """
+次の副作用があらわれることがあるので、観察を十分に行い、異常が認められた場合には投与を中止するなど適切な処置を行うこと。
+
+11.1 重大な副作用
+
+11.1.1 過敏症反応(頻度不明)
+アナフィラキシー等。
+
+11.2 その他の副作用
+
+1%以上 0.1～1%未満
+
+消化器
+悪心、便秘 —
+
+全身症状
+— 疲労
+
+代謝及び栄養障害
+食欲減退 —
+
+神経系障害
+傾眠 —
+
+臨床検査値
+体重減少、ALT/AST増加 —
+
+皮膚及び皮下組織障害
+— そう痒症
+"""
+        d = pmda_if_extract.structure_section11_summary(s)
+        self.assertIsNotNone(d)
+        assert d is not None
+        symptoms = [x["symptom"] for x in d["other_items"]]
+        self.assertTrue(any("悪心" in t for t in symptoms))
+        self.assertTrue(any("便秘" in t for t in symptoms))
+        self.assertTrue(any("疲労" in t for t in symptoms))
+        self.assertTrue(any("傾眠" in t for t in symptoms))
+        self.assertTrue(any("そう痒症" in t for t in symptoms))
+        self.assertTrue(any("1%以上" in t for t in symptoms))
+        self.assertTrue(any("0.1" in t for t in symptoms))
+
 
 class TestSplitIfSections(unittest.TestCase):
     def test_strips_leading_page_noise_before_ident(self) -> None:
