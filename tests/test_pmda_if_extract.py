@@ -427,6 +427,36 @@ class TestStructureSection11(unittest.TestCase):
         self.assertTrue(any("1%以上" in t for t in symptoms))
         self.assertTrue(any("0.1" in t for t in symptoms))
 
+    def test_aquipta_pdf_like_single_line_table_rows(self) -> None:
+        """pypdf 抽出で「消化器 悪心、便秘 -」のように器官とセルが同一行。"""
+        s = """
+次の副作用があらわれることがあるので、観察を十分に行い、異常が認められた場合には投与を中止するなど適切な処置を行うこと。
+
+11.1 重大な副作用
+
+11.1.1 過敏症反応(頻度不明)
+アナフィラキシー等。
+
+11.2 その他の副作用
+
+1%以上 0.1~1%未満
+消化器 悪心、便秘 -
+全身症状 - 疲労
+代謝及び栄養障害 食欲減退 -
+神経系障害 傾眠 -
+臨床検査値 体重減少、ALT/AST増加 -
+皮膚及び皮下組織障害 - そう痒症
+14. 適用上の注意
+交付時の注意
+"""
+        d = pmda_if_extract.structure_section11_summary(s)
+        self.assertIsNotNone(d)
+        assert d is not None
+        symptoms = [x["symptom"] for x in d["other_items"]]
+        self.assertTrue(any("悪心" in t for t in symptoms))
+        self.assertTrue(any("疲労" in t for t in symptoms))
+        self.assertTrue(any("そう痒症" in t for t in symptoms))
+
 
 class TestSplitIfSections(unittest.TestCase):
     def test_strips_leading_page_noise_before_ident(self) -> None:
@@ -530,6 +560,25 @@ x
         d = pmda_if_extract.split_if_sections(text, max_len=5000)
         self.assertIn("用法", d["section_6710"])
         self.assertIn("相互作用本文", d["section_6710"])
+
+    def test_section11_stops_at_14_when_chapter12_missing(self) -> None:
+        """12 章見出しが PDF に無いとき 14 章で打ち切り、17 章が混ざらないこと。"""
+        text = """
+11. 副作用
+11.2 その他の副作用
+表の本文
+14. 適用上の注意
+交付注意
+17. 臨床成績
+試験
+18. 薬効薬理
+機序
+"""
+        d = pmda_if_extract.split_if_sections(text, max_len=5000)
+        s11 = d["section_11"]
+        self.assertIn("表の本文", s11)
+        self.assertNotIn("17.", s11)
+        self.assertNotIn("臨床成績", s11)
 
 
 class TestStructureDosageMemo(unittest.TestCase):

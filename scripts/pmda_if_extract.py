@@ -256,6 +256,34 @@ def _slice_between(text: str, start_pat: re.Pattern, end_pat: re.Pattern | None)
     return text[start:].strip()
 
 
+def _slice_sec11_until_chapter_boundary(
+    text: str,
+    p11: re.Pattern,
+    p12: re.Pattern,
+    extra_end_pats: tuple[re.Pattern, ...],
+) -> str:
+    """
+    第11章を切り出す。12 章見出しが PDF テキストに無い場合でも 13/14 で打ち切り、
+    section_11 が以降の章まで流れ込まないようにする。
+    """
+    m11 = p11.search(text)
+    if not m11:
+        return ""
+    start = m11.start()
+    pos = m11.end()
+    ends: list[int] = []
+    m12 = p12.search(text, pos=pos)
+    if m12:
+        ends.append(m12.start())
+    for p_end in extra_end_pats:
+        m = p_end.search(text, pos=pos)
+        if m:
+            ends.append(m.start())
+    if not ends:
+        return text[start:].strip()
+    return text[start : min(ends)].strip()
+
+
 def _strip_leading_pdf_noise_lines(s: str) -> str:
     """PDF 先頭の頁番号・断片行などを落とす。"""
     lines = (s or "").split("\n")
@@ -331,7 +359,9 @@ def split_if_sections(text: str, max_len: int) -> dict[str, str]:
     sec18 = _slice_between(t, p18, p19)
     sec18 = _strip_redundant_heading_line(sec18, re.compile(r"^\s*18[\.．]\s*薬効薬理\s*$"))
     p12 = re.compile(r"(?m)^\s*12[\.．]\s*臨床検査結果に及ぼす影響")
-    sec11 = _slice_between(t, p11, p12)
+    p13 = re.compile(r"(?m)^\s*13[\.．]\s*過量投与")
+    p14_use = re.compile(r"(?m)^\s*14[\.．]\s*適用上の注意")
+    sec11 = _slice_sec11_until_chapter_boundary(t, p11, p12, (p13, p14_use))
     sec11 = _strip_redundant_heading_line(sec11, re.compile(r"^\s*11[\.．]\s*副作用\s*$"))
     block6 = _slice_between(t, p6, p8)
     block6 = _strip_redundant_heading_line(block6, re.compile(r"^\s*6[\.．]\s*用法及び用量\s*$"))
@@ -793,6 +823,45 @@ _SEC11_SHORT_SOC_LABELS = frozenset(
     }
 )
 
+# PDF 1 行に「代謝及び栄養障害 食欲減退 -」のように器官＋セルが続く場合の行頭マッチ（長い語を先に）
+_SEC11_SOC_ROW_PREFIXES: tuple[str, ...] = tuple(
+    sorted(
+        frozenset(
+            {
+                "皮膚及び皮下組織障害",
+                "代謝及び栄養障害",
+                "血液及びリンパ系障害",
+                "呼吸器、胸郭及び縦隔障害",
+                "胃腸障害",
+                "全身症状",
+                "神経系障害",
+                "臨床検査値",
+            }
+        )
+        | _SEC11_SHORT_SOC_LABELS,
+        key=len,
+        reverse=True,
+    )
+)
+
+
+def _sec11_table_row_soc_prefix_rest(line: str) -> tuple[str, str] | None:
+    """同一行が「器官名 セル…」のとき (SOC, 残り) を返す。従来の単独行 SOC は None。"""
+    s = (line or "").strip()
+    if not s:
+        return None
+    for pref in _SEC11_SOC_ROW_PREFIXES:
+        if not s.startswith(pref):
+            continue
+        if len(s) == len(pref):
+            return None
+        nxt = s[len(pref)]
+        if nxt not in " \t\u3000":
+            continue
+        rest = s[len(pref) :].strip()
+        return pref, rest
+    return None
+
 
 def _sec11_looks_soc_header(s: str) -> bool:
     """11.2 以降の MedDRA SOC / 器官系行見出しの簡易判定（誤検出を減らす）。"""
@@ -814,6 +883,9 @@ def _sec11_line_starts_new_segment(line: str) -> bool:
     ln = line.strip()
     if not ln:
         return False
+    # 12.〜19. 章見出し（11.2 表の直後に 14. が続く PDF で表行と結合しない）
+    if re.match(r"^\s*1[2-9]\s*[\.．]", ln):
+        return True
     if re.match(r"^11\.1\.\d+", ln):
         return True
     if re.match(r"^11\.1\s+", ln) or re.match(r"^11\.1重大", ln) or ln == "11.1":
@@ -823,6 +895,8 @@ def _sec11_line_starts_new_segment(line: str) -> bool:
     if re.match(r"^5%以上", ln) or re.match(r"^5％以上", ln):
         return True
     if re.match(r"^\[\d", ln):
+        return True
+    if _sec11_table_row_soc_prefix_rest(ln) is not None:
         return True
     return _sec11_looks_soc_header(ln)
 
@@ -852,6 +926,13 @@ def _sec11_merge_broken_lines(text: str) -> list[str]:
             out.append(line)
             continue
         if prev.endswith(("。", "．", "?", "！", "」", "』", "]", "）", ")")):
+            out.append(line)
+            continue
+        # 「1%以上 0.1~1%未満」直後の「消化器 悪心、便秘 -」等を結合しない（表の1行目が消えるのを防ぐ）
+        if _sec11_is_band_table_header_line(prev) and (
+            _sec11_table_row_soc_prefix_rest(line) is not None
+            or _sec11_looks_soc_header(line)
+        ):
             out.append(line)
             continue
         out[-1] = prev + line
@@ -1073,10 +1154,44 @@ def structure_section11_summary(sec11: str) -> dict[str, Any] | None:
     cur_parts: list[str] = []
     while j < len(tail_lines):
         ln = tail_lines[j]
+        # 11.2 表の次に続く 12.〜19. 章見出し（同一 section_11 テキスト内に残る PDF 用）
+        if re.match(r"^\s*1[2-9]\s*[\.．]", ln) and not re.match(r"^\s*11\.", ln):
+            if cur_soc and cur_parts:
+                body = " ".join(cur_parts)
+                if table_mode:
+                    other_items.extend(
+                        _sec11_extract_table_row_symptoms(
+                            body, cur_soc, col_bands, budget
+                        )
+                    )
+                else:
+                    other_items.extend(
+                        _sec11_extract_symptom_bullets(body, cur_soc, budget=budget)
+                    )
+                cur_soc = ""
+                cur_parts = []
+            break
         if re.match(r"^5%以上", ln) or ("5%以上" in ln and "1%" in ln and len(ln) < 80):
             j += 1
             continue
-        if _sec11_looks_soc_header(ln):
+        row_soc = _sec11_table_row_soc_prefix_rest(ln)
+        if row_soc:
+            soc_ln, rest_piece = row_soc
+            if cur_soc and cur_parts:
+                body = " ".join(cur_parts)
+                if table_mode:
+                    other_items.extend(
+                        _sec11_extract_table_row_symptoms(
+                            body, cur_soc, col_bands, budget
+                        )
+                    )
+                else:
+                    other_items.extend(
+                        _sec11_extract_symptom_bullets(body, cur_soc, budget=budget)
+                    )
+            cur_soc = soc_ln
+            cur_parts = [rest_piece] if rest_piece else []
+        elif _sec11_looks_soc_header(ln):
             if cur_soc and cur_parts:
                 body = " ".join(cur_parts)
                 if table_mode:
