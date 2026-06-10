@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ノーベルファーマ　低亜鉛血症治療薬・ジンタス錠25mg　６月８日に発売 — 図解（v1）</title>
+  
+  <style>
+    :root {
+      --brand-dark: #0c4a6e;
+      --brand-mid: #0369a1;
+      --brand-light: #e0f2fe;
+      --slate-50: #f8fafc;
+      --slate-200: #e2e8f0;
+      --slate-500: #64748b;
+      --slate-600: #475569;
+      --slate-800: #1e293b;
+      --amber-50: #fffbeb;
+      --amber-200: #fde68a;
+      --amber-950: #451a03;
+      --sky-100: #e0f2fe;
+      --sky-200: #bae6fd;
+      --white: #fff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, system-ui, sans-serif;
+      background: var(--slate-50);
+      color: var(--slate-800);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--brand-mid); text-decoration: underline; text-underline-offset: 2px; }
+    a:hover { color: var(--brand-dark); }
+
+    .page-header {
+      background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand-mid) 45%, #0284c7 100%);
+      color: var(--white);
+      padding: 2.25rem 1rem 2.5rem;
+      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.08);
+    }
+    .page-header-inner {
+      max-width: 56rem;
+      margin: 0 auto;
+      padding: 0 0.5rem;
+    }
+    .page-header-kicker {
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgb(224 242 254 / 0.92);
+      margin: 0;
+    }
+    .page-header h1 {
+      margin: 0.5rem 0 0;
+      font-size: clamp(1.35rem, 2.8vw, 1.85rem);
+      font-weight: 700;
+      line-height: 1.25;
+      word-break: break-word;
+    }
+    .page-header-sub {
+      margin: 0.75rem 0 0;
+      max-width: 42rem;
+      font-size: 0.95rem;
+      color: rgb(224 242 254 / 0.95);
+    }
+
+    .page-main {
+      max-width: 56rem;
+      margin: 0 auto;
+      padding: 2.25rem 1rem 3rem;
+    }
+
+    .disclaimer {
+      margin: 0 0 1.75rem;
+      padding: 0.85rem 1rem;
+      font-size: 0.875rem;
+      line-height: 1.65;
+      color: var(--amber-950);
+      background: var(--amber-50);
+      border: 1px solid var(--amber-200);
+      border-radius: 0.5rem;
+    }
+
+    .meta-panel {
+      margin-bottom: 2.25rem;
+      padding: 0.75rem 1rem;
+      font-size: 0.75rem;
+      line-height: 1.65;
+      color: var(--slate-600);
+      background: rgb(255 255 255 / 0.95);
+      border: 1px solid var(--slate-200);
+      border-radius: 0.75rem;
+      box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+    }
+    .meta-panel p { margin: 0.2rem 0; }
+    .meta-label { font-weight: 600; color: var(--slate-500); margin-right: 0.35rem; }
+    .meta-panel code {
+      font-size: 0.68rem;
+      padding: 0.1rem 0.35rem;
+      border-radius: 0.25rem;
+      background: #f1f5f9;
+    }
+
+    .section-block { margin-bottom: 2.75rem; }
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0 0 1rem;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--brand-dark);
+    }
+    .badge {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2rem;
+      height: 2rem;
+      padding: 0 0.35rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--white);
+      background: var(--brand-mid);
+      border-radius: 0.5rem;
+    }
+    .card {
+      background: var(--white);
+      border: 1px solid var(--slate-200);
+      border-radius: 1rem;
+      padding: 1.15rem 1.25rem;
+      box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+    }
+    .card-body {
+      margin: 0;
+      font-size: 0.875rem;
+      line-height: 1.65;
+      color: var(--slate-800);
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .dosage-memo {
+      margin: 0 0 1rem;
+      padding: 1rem 1.15rem;
+      background: rgb(248 250 252);
+      border: 1px solid var(--slate-200);
+      border-radius: 0.75rem;
+    }
+    .dosage-memo-title {
+      margin: 0 0 0.65rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--brand-dark);
+    }
+    .dosage-memo-ul {
+      margin: 0;
+      padding-left: 1.15rem;
+      font-size: 0.875rem;
+      line-height: 1.65;
+      color: var(--slate-800);
+    }
+    .dosage-memo-li { margin: 0.35rem 0; }
+    .dosage-memo-note {
+      margin: 0.65rem 0 0;
+      font-size: 0.72rem;
+      color: var(--slate-500);
+      line-height: 1.5;
+    }
+
+    .card-grid {
+      display: grid;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    @media (min-width: 900px) {
+      .card-grid { grid-template-columns: 1fr 1fr 1.08fr; }
+    }
+    .d-card {
+      background: var(--white);
+      border: 1px solid var(--slate-200);
+      border-radius: 1rem;
+      padding: 1.1rem 1.2rem;
+      box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+    }
+    .d-card--accent {
+      border-width: 2px;
+      border-color: #7dd3fc;
+      background: linear-gradient(145deg, #f0f9ff 0%, #fff 55%, #e0f2fe 100%);
+      box-shadow: 0 2px 8px rgb(3 105 161 / 0.08);
+    }
+    .d-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--slate-500);
+      margin: 0 0 0.35rem;
+    }
+    .d-value {
+      margin: 0;
+      font-size: 1.35rem;
+      font-weight: 700;
+      line-height: 1.3;
+      color: var(--brand-dark);
+      word-break: break-word;
+    }
+    .d-value--sm { font-size: 1.05rem; }
+    .d-note {
+      margin: 0.5rem 0 0;
+      font-size: 0.78rem;
+      color: var(--slate-600);
+      line-height: 1.5;
+    }
+    .d-divider {
+      margin: 0.85rem 0 0;
+      padding-top: 0.85rem;
+      border-top: 1px solid rgb(186 230 253 / 0.85);
+    }
+    .subhead-hint {
+      margin: 0.35rem 0 0.85rem;
+      font-size: 0.8rem;
+      color: var(--slate-500);
+      line-height: 1.55;
+    }
+    .subsection-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 1.35rem 0 0.75rem;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--brand-dark);
+    }
+
+    .moa-wrap { margin-top: 0.25rem; }
+    .moa-lead-label {
+      margin: 0 0 0.45rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--slate-500);
+    }
+    .moa-intro {
+      margin: 0 0 0.75rem;
+      padding: 1rem 1.15rem;
+      font-size: 0.92rem;
+      line-height: 1.75;
+      color: var(--slate-800);
+      background: linear-gradient(180deg, #f8fafc 0%, #fff 40%);
+      border: 1px solid var(--slate-200);
+      border-radius: 0.85rem;
+    }
+    .moa-intro-note {
+      display: block;
+      margin-top: 0.65rem;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      color: var(--slate-600);
+      font-weight: 500;
+    }
+    .moa-source {
+      margin: 0.35rem 0 0;
+      font-size: 0.72rem;
+      color: var(--slate-500);
+    }
+
+    .trial-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      margin-top: 0.35rem;
+    }
+    .trial-lead {
+      margin: 0 0 0.85rem;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      color: var(--slate-600);
+      background: #f1f5f9;
+      border-radius: 0.5rem;
+      border: 1px solid var(--slate-200);
+    }
+    .trial-card {
+      border-radius: 0.95rem;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgb(0 0 0 / 0.06);
+    }
+    .trial-card-head {
+      padding: 0.9rem 1rem 0.85rem;
+      color: #fff;
+      background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand-mid) 55%, #0284c7 100%);
+    }
+    .trial-heading {
+      margin: 0;
+      font-size: 0.88rem;
+      font-weight: 700;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .trial-design {
+      margin: 0.55rem 0 0;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      color: rgb(224 242 254 / 0.98);
+    }
+    .trial-design-list {
+      margin: 0.55rem 0 0;
+      padding-left: 1.1rem;
+      font-size: 0.78rem;
+      line-height: 1.55;
+      color: rgb(224 242 254 / 0.98);
+    }
+    .trial-design-list li { margin: 0.2rem 0; padding-left: 0.15rem; }
+    /* 臨床成績：対象患者／試験デザインを要約カード化（md以上で2列） */
+    .trial-summary-grid {
+      display: grid;
+      gap: 0.75rem;
+      margin: 0 0 0.9rem;
+    }
+    @media (min-width: 48rem) {
+      .trial-summary-grid--two {
+        grid-template-columns: 1fr 1fr;
+        align-items: stretch;
+      }
+      .trial-summary-grid--two .trial-summary-card--fullrow {
+        grid-column: 1 / -1;
+      }
+    }
+    .trial-summary-card {
+      margin: 0;
+      padding: 0.85rem 0.95rem;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      color: var(--slate-800);
+      word-break: break-word;
+      background: linear-gradient(180deg, #f8fafc 0%, #fff 45%);
+      border: 1px solid var(--slate-200);
+      border-radius: 0.65rem;
+    }
+    .trial-summary-card-label {
+      margin: 0 0 0.45rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--slate-600);
+    }
+    .trial-summary-card-text {
+      margin: 0;
+      font-size: 0.82rem;
+      line-height: 1.65;
+      color: var(--slate-800);
+    }
+    .trial-summary-card-lead {
+      margin: 0 0 0.55rem;
+      font-size: 0.88rem;
+      font-weight: 600;
+      line-height: 1.55;
+      color: var(--brand-dark);
+    }
+    .trial-summary-bullets {
+      margin: 0;
+      padding-left: 1.15rem;
+      font-size: 0.8rem;
+      line-height: 1.65;
+      color: var(--slate-800);
+      list-style-type: disc;
+    }
+    .trial-summary-bullets li { margin: 0.28rem 0; padding-left: 0.1rem; }
+    .trial-result-label {
+      margin: 0 0 0.4rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--slate-600);
+    }
+    .trial-card-body {
+      margin: 0;
+      padding: 1rem 1.05rem;
+      background: var(--white);
+      border: 1px solid var(--slate-200);
+      border-top: none;
+    }
+    .trial-result {
+      margin: 0;
+      font-size: 0.86rem;
+      line-height: 1.65;
+      color: var(--slate-800);
+      font-weight: 500;
+    }
+    .trial-result-structured {
+      font-weight: 400;
+      line-height: 1.75;
+    }
+    .trial-result-structured .trial-metric {
+      font-weight: 700;
+      color: #5b21b6;
+    }
+    .trial-result-intro {
+      margin: 0 0 0.65rem;
+      font-size: 0.76rem;
+      line-height: 1.55;
+      color: var(--slate-600);
+    }
+    .trial-result-three {
+      display: grid;
+      gap: 0.65rem;
+      margin: 0 0 0.35rem;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 48rem) {
+      .trial-result-three {
+        grid-template-columns: 1fr 1fr 1fr;
+        align-items: stretch;
+      }
+    }
+    .trial-result-block {
+      margin: 0;
+      padding: 0.75rem 0.65rem;
+      text-align: center;
+      background: linear-gradient(180deg, #faf5ff 0%, #fff 55%);
+      border: 1px solid #e9d5ff;
+      border-radius: 0.65rem;
+    }
+    .trial-result-block--stat {
+      text-align: left;
+      background: linear-gradient(180deg, #f8fafc 0%, #fff 55%);
+      border-color: var(--slate-200);
+    }
+    .trial-result-block-kicker {
+      margin: 0;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--slate-600);
+    }
+    .trial-result-block-sub {
+      margin: 0.15rem 0 0;
+      font-size: 0.68rem;
+      color: var(--slate-500);
+    }
+    .trial-result-block-num {
+      margin: 0.35rem 0 0;
+      font-size: 1.35rem;
+      font-weight: 800;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      color: #5b21b6;
+      font-variant-numeric: tabular-nums;
+    }
+    .trial-result-block-unit {
+      margin-left: 0.1rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #6d28d9;
+    }
+    .trial-result-block-line {
+      margin: 0.28rem 0 0;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      font-weight: 600;
+      color: var(--slate-800);
+    }
+    .trial-result-block-line:first-of-type {
+      margin-top: 0.45rem;
+    }
+
+    /* 主な副作用（2カラム要約） */
+    .ae2-panel-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0 0 0.65rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--brand-dark);
+    }
+    .ae2-panel-num {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2rem;
+      height: 2rem;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--white);
+      background: var(--brand-mid);
+      border-radius: 0.45rem;
+    }
+    .ae2-note {
+      margin: 0 0 1rem;
+      font-size: 0.8rem;
+      line-height: 1.55;
+      color: var(--slate-500);
+    }
+    .ae2-grid {
+      display: grid;
+      gap: 1rem;
+      align-items: stretch;
+    }
+    @media (min-width: 900px) {
+      .ae2-grid { grid-template-columns: 1fr 1fr; }
+    }
+    .ae2-card {
+      border-radius: 1rem;
+      padding: 1.1rem 1.15rem;
+      min-height: 6rem;
+    }
+    .ae2-card--serious {
+      border: 1px solid #fecaca;
+      background: rgb(254 242 242 / 0.65);
+    }
+    .ae2-card--other {
+      border: 1px solid var(--slate-200);
+      background: var(--white);
+      box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+    }
+    .ae2-card-title {
+      margin: 0 0 0.65rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+    .ae2-card--serious .ae2-card-title { color: #7f1d1d; }
+    .ae2-card--other .ae2-card-title { color: var(--brand-dark); }
+    .ae2-serious-line {
+      margin: 0 0 0.55rem;
+      font-size: 0.82rem;
+      line-height: 1.65;
+      color: rgb(69 10 10 / 0.95);
+    }
+    .ae2-serious-line:last-child { margin-bottom: 0; }
+    .ae2-muted {
+      margin: 0;
+      font-size: 0.8rem;
+      line-height: 1.55;
+      color: var(--slate-500);
+    }
+    .ae2-ul {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      font-size: 0.82rem;
+      line-height: 1.55;
+      color: var(--slate-700);
+    }
+    .ae2-li {
+      display: flex;
+      gap: 0.45rem;
+      margin: 0 0 0.45rem;
+    }
+    .ae2-li:last-child { margin-bottom: 0; }
+    .ae2-li-dot {
+      flex-shrink: 0;
+      color: var(--slate-400);
+      font-size: 0.75rem;
+      line-height: 1.65;
+    }
+    .ae2-li strong { color: var(--slate-800); font-weight: 700; }
+    .ae2-source {
+      margin: 0.85rem 0 0;
+      font-size: 0.7rem;
+      color: var(--slate-500);
+    }
+
+    .footer-note {
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--slate-200);
+      font-size: 0.7rem;
+      line-height: 1.65;
+      color: var(--slate-500);
+    }
+
+    @media print {
+      body { background: #fff !important; }
+      .card, .d-card { box-shadow: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="page-header-inner">
+      <p class="page-header-kicker">ミクス発売記事ベース・PMDA添付文書抜粋（自動生成）</p>
+      <h1>ノーベルファーマ　低亜鉛血症治療薬・ジンタス錠25mg　６月８日に発売</h1>
+      <p class="page-header-sub">作用機序・臨床成績・副作用・用法・相互作用</p>
+    </div>
+  </header>
+
+  <main class="page-main">
+    <p class="disclaimer">PMDA 検索で候補は得られませんでした。`data/pmda_overrides.json` に stable_id を追加するか、RSS タイトルを見直してください（発売手前全文・「、」以降・中黒「・」以降で再検索します）。</p>
+
+    <div class="meta-panel">
+      <p><span class="meta-label">生成</span>2026-06-10T04:50:39Z / <span class="meta-label">stable_id</span> <code>https://www.mixonline.jp/tabid55.html?artid=80370</code></p>
+      <p><span class="meta-label">ミクス</span><a href="https://www.mixonline.jp/tabid55.html?artid=80370" rel="noopener noreferrer">https://www.mixonline.jp/tabid55.html?artid=80370</a></p>
+      
+      
+    </div>
+
+    <section class="section-block">
+      <h2 class="section-title">
+        <span class="badge">1</span>
+        製品名・一般名・効能（自動要約）
+      </h2>
+      
+      <div class="card-grid">
+        <div class="d-card">
+          <p class="d-label">販売名（目安）</p>
+          
+          <p class="d-value">ジンタス錠25mg 6月8日に発売</p>
+          <p class="d-note">RSS 見出しの「・」以降などから推定した表記です。</p>
+          
+        </div>
+        <div class="d-card">
+          <p class="d-label">一般名（有効成分・要約）</p>
+          
+          <p class="d-value d-value--sm">（3. 組成からの自動抽出なし）</p>
+          
+        </div>
+        <div class="d-card d-card--accent">
+          
+          
+          
+          <p class="d-label">薬効分類・効能</p>
+          <p class="d-value d-value--sm">（自動要約できませんでした）</p>
+          
+        </div>
+      </div>
+      
+    </section>
+
+    <section class="section-block">
+      <h2 class="section-title">
+        <span class="badge">2</span>
+        作用機序
+      </h2>
+      
+      <div class="card">
+        <div class="card-body">—</div>
+      </div>
+      
+    </section>
+
+    <section class="section-block">
+      <h2 class="section-title">
+        <span class="badge">3</span>
+        臨床成績
+      </h2>
+      
+      <div class="card">
+        <div class="card-body">—</div>
+      </div>
+      
+    </section>
+
+    <section class="section-block">
+      
+      <h2 class="section-title">
+        <span class="badge">4</span>
+        副作用
+      </h2>
+      <div class="card">
+        <div class="card-body">—</div>
+      </div>
+      
+    </section>
+
+    <section class="section-block">
+      <h2 class="section-title">
+        <span class="badge">5</span>
+        用法・用量・相互作用（メモ）
+      </h2>
+      
+      <div class="card">
+        <div class="card-body">—</div>
+      </div>
+      
+    </section>
+
+    <footer class="footer-note">
+      出典: PMDA 公開の添付文書（抜粋・自動生成）。診療・服薬は医師・薬剤師の指示および最新の添付文書に従ってください。KEGG 等の二次出典は v1 では用いていません。
+    </footer>
+  </main>
+</body>
+</html>
